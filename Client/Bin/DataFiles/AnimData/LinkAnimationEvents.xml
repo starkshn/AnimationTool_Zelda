@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Generated on: 2025-02-03 14:04:12-->
+<AnimationEvent NumAnim="1">
+    <Animation Name="Armature|Nml_Move_Dash" NumLayer="1">
+        <Layer Name="Sound" NumEvent="7">
+            <Event Name="Left" TrackPos="1.9614003"/>
+            <Event Name="Right" TrackPos="2.394973"/>
+            <Event Name="1" TrackPos="0.45421901"/>
+            <Event Name="11" TrackPos="0.80520642"/>
+            <Event Name="111" TrackPos="1.1561939"/>
+            <Event Name="1111" TrackPos="1.548474"/>
+            <Event Name="11111" TrackPos="2.8285458"/>
+        </Layer>
+    </Animation>
+</AnimationEvent>

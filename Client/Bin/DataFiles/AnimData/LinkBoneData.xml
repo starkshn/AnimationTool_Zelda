@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Generated on: 2025-01-19 20:12:19-->
+<BoneHierachy Name="LinkBoneData">
+    <Bone Name="RootNode" Index="0" ParentIndex="-1" NumChild="12" NumTotalChildBone="208">
+        <Bone Name="Armature" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="195">
+            <Bone Name="Root" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="194">
+                <Bone Name="Skl_Root" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="191">
+                    <Bone Name="Spine_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="146">
+                        <Bone Name="Spine_2" Index="1" ParentIndex="0" NumChild="4" NumTotalChildBone="145">
+                            <Bone Name="Clavicle_L" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="33">
+                                <Bone Name="Arm_1_L" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="30">
+                                    <Bone Name="Arm_1_Assist_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Arm_1_Assist_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                    <Bone Name="Arm_2_L" Index="1" ParentIndex="0" NumChild="3" NumTotalChildBone="27">
+                                        <Bone Name="Elbow_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Elbow_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Wrist_Assist_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Wrist_Assist_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Wrist_L" Index="1" ParentIndex="0" NumChild="6" NumTotalChildBone="22">
+                                            <Bone Name="Finger_A_1_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_A_2_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_A_3_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_A_3_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_B_1_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_B_2_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_B_3_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_B_3_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_C_1_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_C_2_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_C_3_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_C_3_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_D_1_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_D_2_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_D_3_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_D_3_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_E_1_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_E_2_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_E_3_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_E_3_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Weapon_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Weapon_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                                <Bone Name="Clavicle_Assist_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                    <Bone Name="Clavicle_Assist_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                </Bone>
+                            </Bone>
+                            <Bone Name="Clavicle_R" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="33">
+                                <Bone Name="Arm_1_R" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="30">
+                                    <Bone Name="Arm_1_Assist_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Arm_1_Assist_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                    <Bone Name="Arm_2_R" Index="1" ParentIndex="0" NumChild="3" NumTotalChildBone="27">
+                                        <Bone Name="Elbow_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Elbow_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Wrist_Assist_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Wrist_Assist_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Wrist_R" Index="1" ParentIndex="0" NumChild="6" NumTotalChildBone="22">
+                                            <Bone Name="Finger_A_1_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_A_2_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_A_3_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_A_3_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_B_1_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_B_2_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_B_3_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_B_3_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_C_1_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_C_2_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_C_3_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_C_3_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_D_1_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_D_2_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_D_3_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_D_3_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Finger_E_1_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Finger_E_2_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Finger_E_3_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Finger_E_3_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Weapon_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Weapon_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                                <Bone Name="Clavicle_Assist_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                    <Bone Name="Clavicle_Assist_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                </Bone>
+                            </Bone>
+                            <Bone Name="Neck" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="74">
+                                <Bone Name="Head" Index="1" ParentIndex="0" NumChild="4" NumTotalChildBone="73">
+                                    <Bone Name="Ear_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Ear_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                    <Bone Name="Ear_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Ear_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                    <Bone Name="Face_Root" Index="1" ParentIndex="0" NumChild="28" NumTotalChildBone="65">
+                                        <Bone Name="Cheek_D_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Cheek_D_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Cheek_D_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Cheek_D_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Cheek_U_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Cheek_U_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Cheek_U_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Cheek_U_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Chin" Index="1" ParentIndex="0" NumChild="5" NumTotalChildBone="10">
+                                            <Bone Name="Chin_Point" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Chin_Point_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                            <Bone Name="Lip_D" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Lip_D_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                            <Bone Name="Lip_D_L_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Lip_D_L_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                            <Bone Name="Lip_D_R_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Lip_D_R_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                            <Bone Name="Teeth_D" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Teeth_D_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                        </Bone>
+                                        <Bone Name="Eye_In_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eye_In_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eye_In_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eye_In_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eye_Out_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eye_Out_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eye_Out_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eye_Out_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyeball_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyeball_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyeball_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyeball_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_In_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_In_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_In_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_In_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_Mid_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_Mid_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_Mid_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_Mid_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_Out_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_Out_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyebrow_Out_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyebrow_Out_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyelid_D_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyelid_D_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyelid_D_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyelid_D_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyelid_U_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyelid_U_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Eyelid_U_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Eyelid_U_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Lip_U" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Lip_U_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Lip_U_L_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Lip_U_L_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Lip_U_L_2" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Lip_U_L_2_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Lip_U_R_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Lip_U_R_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Lip_U_R_2" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Lip_U_R_2_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Nose" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Nose_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                        <Bone Name="Teeth_U" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Teeth_U_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                    </Bone>
+                                    <Bone Name="Hair_Root" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                        <Bone Name="Ponytail_A_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Ponytail_A_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                            <Bone Name="Pod_A" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                <Bone Name="Pod_A_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                            </Bone>
+                        </Bone>
+                    </Bone>
+                    <Bone Name="Waist" Index="1" ParentIndex="0" NumChild="13" NumTotalChildBone="43">
+                        <Bone Name="Belt_A_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="3">
+                            <Bone Name="Belt_A_2" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                <Bone Name="Belt_A_3" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                    <Bone Name="Belt_A_3_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                </Bone>
+                            </Bone>
+                        </Bone>
+                        <Bone Name="Belt_C_1" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_1_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_2" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_2_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_3" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_3_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_4" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_4_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_5" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_5_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_6" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_6_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Belt_C_7" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                            <Bone Name="Pod_B" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                <Bone Name="Pod_B_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                            </Bone>
+                        </Bone>
+                        <Bone Name="Belt_C_8" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Belt_C_8_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Leg_1_L" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="8">
+                            <Bone Name="Knee_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                <Bone Name="Knee_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                            </Bone>
+                            <Bone Name="Leg_2_L" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="5">
+                                <Bone Name="Ankle_Assist_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                    <Bone Name="Ankle_Assist_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                </Bone>
+                                <Bone Name="Ankle_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                    <Bone Name="Toe_L" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Toe_L_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                        </Bone>
+                        <Bone Name="Leg_1_R" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="8">
+                            <Bone Name="Knee_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                <Bone Name="Knee_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                            </Bone>
+                            <Bone Name="Leg_2_R" Index="1" ParentIndex="0" NumChild="2" NumTotalChildBone="5">
+                                <Bone Name="Ankle_Assist_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                    <Bone Name="Ankle_Assist_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                </Bone>
+                                <Bone Name="Ankle_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="2">
+                                    <Bone Name="Toe_R" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                                        <Bone Name="Toe_R_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                        </Bone>
+                        <Bone Name="Poach_A" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Poach_A_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                        <Bone Name="Pod_C" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                            <Bone Name="Pod_C_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                        </Bone>
+                    </Bone>
+                </Bone>
+                <Bone Name="Weapon_Root" Index="1" ParentIndex="0" NumChild="1" NumTotalChildBone="1">
+                    <Bone Name="Weapon_Root_end" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+                </Bone>
+            </Bone>
+        </Bone>
+        <Bone Name="Belt_A_Buckle__Mt_Belt_A" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Belt_C_Buckle__Mt_Belt_C" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Earring__Mt_Earring" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Eye_L__Mt_Eyeball_L" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Eye_R__Mt_Eyeball_R" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Eyelashes__Mt_Eyelashes" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Face__Mt_Face" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Face__Mt_Head" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Skin__Mt_Lower_Skin" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Skin__Mt_Underwear" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+        <Bone Name="Skin__Mt_Upper_Skin" Index="1" ParentIndex="0" NumChild="0" NumTotalChildBone="0"/>
+    </Bone>
+</BoneHierachy>

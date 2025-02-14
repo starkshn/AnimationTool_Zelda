@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Generated on: 2025-01-24 16:08:54-->
+<BoneHierachy Name="FionaBone">
+    <Bone Name="RootNode" Index="0" ParentIndex="-1" NumChild="1" NumTotalChildBone="60">
+        <Bone Name="Fiona (merge)" Index="2" ParentIndex="1" NumChild="1" NumTotalChildBone="58">
+            <Bone Name="Fiona" Index="3" ParentIndex="2" NumChild="6" NumTotalChildBone="57">
+                <Bone Name="Bip001" Index="4" ParentIndex="3" NumChild="2" NumTotalChildBone="51">
+                    <Bone Name="Bip001 Footsteps" Index="5" ParentIndex="4" NumChild="0" NumTotalChildBone="0"/>
+                    <Bone Name="Bip001 Pelvis" Index="6" ParentIndex="5" NumChild="1" NumTotalChildBone="49">
+                        <Bone Name="Bip001 Spine" Index="7" ParentIndex="6" NumChild="3" NumTotalChildBone="48">
+                            <Bone Name="Bip001 L Thigh" Index="8" ParentIndex="7" NumChild="1" NumTotalChildBone="4">
+                                <Bone Name="Bip001 L Calf" Index="9" ParentIndex="8" NumChild="1" NumTotalChildBone="3">
+                                    <Bone Name="Bip001 L Foot" Index="10" ParentIndex="9" NumChild="1" NumTotalChildBone="2">
+                                        <Bone Name="Bip001 L Toe0" Index="11" ParentIndex="10" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Bip001 L Toe0Nub" Index="12" ParentIndex="11" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                            <Bone Name="Bip001 R Thigh" Index="13" ParentIndex="12" NumChild="1" NumTotalChildBone="4">
+                                <Bone Name="Bip001 R Calf" Index="14" ParentIndex="13" NumChild="1" NumTotalChildBone="3">
+                                    <Bone Name="Bip001 R Foot" Index="15" ParentIndex="14" NumChild="1" NumTotalChildBone="2">
+                                        <Bone Name="Bip001 R Toe0" Index="16" ParentIndex="15" NumChild="1" NumTotalChildBone="1">
+                                            <Bone Name="Bip001 R Toe0Nub" Index="17" ParentIndex="16" NumChild="0" NumTotalChildBone="0"/>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                            <Bone Name="Bip001 Spine1" Index="18" ParentIndex="17" NumChild="1" NumTotalChildBone="37">
+                                <Bone Name="Bip001 Spine2" Index="19" ParentIndex="18" NumChild="2" NumTotalChildBone="36">
+                                    <Bone Name="Bip001 Neck" Index="20" ParentIndex="19" NumChild="3" NumTotalChildBone="28">
+                                        <Bone Name="Bip001 Head" Index="21" ParentIndex="20" NumChild="4" NumTotalChildBone="8">
+                                            <Bone Name="Bip001 Hair" Index="22" ParentIndex="21" NumChild="1" NumTotalChildBone="2">
+                                                <Bone Name="Bip001 Hair02" Index="23" ParentIndex="22" NumChild="1" NumTotalChildBone="1">
+                                                    <Bone Name="Bip001 HairNub" Index="24" ParentIndex="23" NumChild="0" NumTotalChildBone="0"/>
+                                                </Bone>
+                                            </Bone>
+                                            <Bone Name="Bip001 HeadNub" Index="25" ParentIndex="24" NumChild="0" NumTotalChildBone="0"/>
+                                            <Bone Name="Bip001 Ponytail1" Index="26" ParentIndex="25" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Bip001 Ponytail1Nub" Index="27" ParentIndex="26" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                            <Bone Name="Bip001 Ponytail2" Index="28" ParentIndex="27" NumChild="1" NumTotalChildBone="1">
+                                                <Bone Name="Bip001 Ponytail2Nub" Index="29" ParentIndex="28" NumChild="0" NumTotalChildBone="0"/>
+                                            </Bone>
+                                        </Bone>
+                                        <Bone Name="Bip001 L Clavicle" Index="30" ParentIndex="29" NumChild="1" NumTotalChildBone="10">
+                                            <Bone Name="Bip001 L UpperArm" Index="31" ParentIndex="30" NumChild="1" NumTotalChildBone="9">
+                                                <Bone Name="Bip001 L Forearm" Index="32" ParentIndex="31" NumChild="1" NumTotalChildBone="8">
+                                                    <Bone Name="Bip001 L Hand" Index="33" ParentIndex="32" NumChild="2" NumTotalChildBone="7">
+                                                        <Bone Name="Bip001 L Finger0" Index="34" ParentIndex="33" NumChild="1" NumTotalChildBone="1">
+                                                            <Bone Name="Bip001 L Finger0Nub" Index="35" ParentIndex="34" NumChild="0" NumTotalChildBone="0"/>
+                                                        </Bone>
+                                                        <Bone Name="Bone - morningstar01" Index="36" ParentIndex="35" NumChild="1" NumTotalChildBone="4">
+                                                            <Bone Name="Bone - morningstar02" Index="37" ParentIndex="36" NumChild="1" NumTotalChildBone="3">
+                                                                <Bone Name="Bone - morningstar03" Index="38" ParentIndex="37" NumChild="1" NumTotalChildBone="2">
+                                                                    <Bone Name="Bone - morningstar04" Index="39" ParentIndex="38" NumChild="1" NumTotalChildBone="1">
+                                                                        <Bone Name="Bone - morningstar05" Index="40" ParentIndex="39" NumChild="0" NumTotalChildBone="0"/>
+                                                                    </Bone>
+                                                                </Bone>
+                                                            </Bone>
+                                                        </Bone>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                        </Bone>
+                                        <Bone Name="Bip001 R Clavicle" Index="41" ParentIndex="40" NumChild="1" NumTotalChildBone="7">
+                                            <Bone Name="Bip001 R UpperArm" Index="42" ParentIndex="41" NumChild="1" NumTotalChildBone="6">
+                                                <Bone Name="Bip001 R Forearm" Index="43" ParentIndex="42" NumChild="1" NumTotalChildBone="5">
+                                                    <Bone Name="Bip001 R Hand" Index="44" ParentIndex="43" NumChild="2" NumTotalChildBone="4">
+                                                        <Bone Name="Bip001 R Finger0" Index="45" ParentIndex="44" NumChild="1" NumTotalChildBone="1">
+                                                            <Bone Name="Bip001 R Finger0Nub" Index="46" ParentIndex="45" NumChild="0" NumTotalChildBone="0"/>
+                                                        </Bone>
+                                                        <Bone Name="Sword" Index="47" ParentIndex="46" NumChild="1" NumTotalChildBone="1">
+                                                            <Bone Name="SWORD" Index="48" ParentIndex="47" NumChild="0" NumTotalChildBone="0"/>
+                                                        </Bone>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                        </Bone>
+                                    </Bone>
+                                    <Bone Name="Bone - catBase" Index="49" ParentIndex="48" NumChild="1" NumTotalChildBone="6">
+                                        <Bone Name="Bone - catbody01" Index="50" ParentIndex="49" NumChild="2" NumTotalChildBone="5">
+                                            <Bone Name="Bone - catbody02" Index="51" ParentIndex="50" NumChild="0" NumTotalChildBone="0"/>
+                                            <Bone Name="Bone - cattail01" Index="52" ParentIndex="51" NumChild="1" NumTotalChildBone="3">
+                                                <Bone Name="Bone - cattail02" Index="53" ParentIndex="52" NumChild="1" NumTotalChildBone="2">
+                                                    <Bone Name="Bone - cattail03" Index="54" ParentIndex="53" NumChild="1" NumTotalChildBone="1">
+                                                        <Bone Name="Bone - cattail04" Index="55" ParentIndex="54" NumChild="0" NumTotalChildBone="0"/>
+                                                    </Bone>
+                                                </Bone>
+                                            </Bone>
+                                        </Bone>
+                                    </Bone>
+                                </Bone>
+                            </Bone>
+                        </Bone>
+                    </Bone>
+                </Bone>
+                <Bone Name="Cake_Mesh" Index="56" ParentIndex="55" NumChild="0" NumTotalChildBone="0"/>
+                <Bone Name="Fiona_Mesh" Index="57" ParentIndex="56" NumChild="0" NumTotalChildBone="0"/>
+                <Bone Name="morningstar" Index="58" ParentIndex="57" NumChild="0" NumTotalChildBone="0"/>
+                <Bone Name="PlayerShadow" Index="59" ParentIndex="58" NumChild="0" NumTotalChildBone="0"/>
+                <Bone Name="SlaveAnim" Index="60" ParentIndex="59" NumChild="0" NumTotalChildBone="0"/>
+            </Bone>
+        </Bone>
+    </Bone>
+</BoneHierachy>
