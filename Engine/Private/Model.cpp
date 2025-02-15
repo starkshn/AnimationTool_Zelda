@@ -1168,6 +1168,16 @@ void CModel::Ready_ChainInterpolation(Abgt eSrcChainInterpolationGroup, Abgt eDs
 
 	if (Out_Of_BlendGroup(iSrcGroupIdx) || Out_Of_BlendGroup(iDstGroupIdx))
 		return;
+	
+	if (Get_Dst_InterAnimIdx(Abgt(iSrcGroupIdx), iDstGroupIdx) == NON)
+	{
+#ifdef _DEBUG
+
+		assert(false, "Get_Dst_InterAnimIdx(Abgt(iSrcGroupIdx), iDstGroupIdx) == NON");
+
+#endif
+		return;
+	}
 		
 	// 보보간을 시작하기 전, 현재 그룹 보보간 정보 설정
 	// 보간 목적지 애니매이션 인덱스 설정
@@ -2768,7 +2778,7 @@ _bool CModel::Process_ChainInterpolationGroups(_int iChainInterpolationingGroupC
 			}
 		}
 	}
-	
+
 	return true;
 }
 
@@ -2908,10 +2918,10 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 				}
 			}
 		}
-		// tot 그룹이 보보간 이상 수행중인데 목적지 그룹이 2개 이상인 경우
+		// tot 그룹이 보보간 이상 수행중인데 목적지 그룹이 2개 이상이고, 변경 요청이 2개 이상이다.
 		else
 		{
-			// 어떤 그룹이 보보간 이상 수행대상의 그룹인지 찾는다.
+			// tot 그룹이 어떤 그룹들로 보보간 이상 수행중인지 그룹들을 찾는다.
 			for (_int i = low; i < tot; ++i)
 			{
 				_int iCurDstInterpolationGroupIdx = i;
@@ -2919,6 +2929,7 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 				if (iCurDstInterpolationAnimIdx == NON)
 					continue;
 
+				// 같은 그룹에 변경요청이 온 애니매이션 인덱스를 확인한다.
 				_int iReAnimIdx = ChangeGroups[i].second;
 				if (iReAnimIdx == NON)
 					continue;
@@ -2926,7 +2937,7 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 				if (iReAnimIdx == iCurDstInterpolationAnimIdx)
 					continue;
 
-				Ready_ChainInterpolation(Abgt(iCurDstInterpolationGroupIdx), Abgt(iCurDstInterpolationGroupIdx), iReAnimIdx, true);
+				Ready_ChainInterpolation(Abgt::TOTAL, Abgt(iCurDstInterpolationGroupIdx), iReAnimIdx, true);
 			}
 		}
 	}
