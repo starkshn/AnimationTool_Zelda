@@ -1019,7 +1019,7 @@ void CModel::Finalize_Interpolation_When_TotalToNotTotal(Abgt eSrcInterpolationG
 		}
 
 		// 다른 그룹에서 보간이 끝났는지 아닌지 확인해준다.
-		if (eSrcInterpolationGroup == tot)
+		if (eSrcInterpolationGroup == Abgt::TOTAL)
 		{
 			for (_int i = low; i <= tot; ++i)
 			{
@@ -1168,14 +1168,13 @@ void CModel::Ready_ChainInterpolation(Abgt eSrcChainInterpolationGroup, Abgt eDs
 
 	if (Out_Of_BlendGroup(iSrcGroupIdx) || Out_Of_BlendGroup(iDstGroupIdx))
 		return;
-	
-	if (Get_Dst_InterAnimIdx(Abgt(iSrcGroupIdx), iDstGroupIdx) == NON)
+
+	if (iChainInterpolationDstAnimIdx == NON)
 	{
 #ifdef _DEBUG
 
-		assert(false, "Get_Dst_InterAnimIdx(Abgt(iSrcGroupIdx), iDstGroupIdx) == NON");
-
-#endif
+		assert(false, iChainInterpolationDstAnimIdx == NON);
+#endif 
 		return;
 	}
 		
@@ -1194,8 +1193,10 @@ void CModel::Ready_ChainInterpolation(Abgt eSrcChainInterpolationGroup, Abgt eDs
 	Cal_Interpolation_KeyFrame(iChainInterpolationDstAnimIdx, m_BlendGroups[iSrcGroupIdx].InterpolationInfo);
 
 	if (Setup_BoneSRT)
+	{
 		if (m_BlendGroups[iSrcGroupIdx].AnimInfo.pAnim)
 			m_BlendGroups[iSrcGroupIdx].AnimInfo.pAnim->Setup_ChainInterpolation_BoneSRT();
+	}
 }
 
 void CModel::Cal_Interpolation_KeyFrame(_int iInterpolationDstAnimIdx, INTERPOLATION_INFO& InterpolationSrcInfo)
@@ -1823,15 +1824,11 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 							_int iReGroupIdx = i;
 							_int iReAnimIdx = ChangeGroups[i].second;
 
-							/*if (iCurDstInterpolationingAnimIdx != iReAnimIdx)
+							if (iCurDstInterpolationingAnimIdx != iReAnimIdx)
 							{
 								Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt::TOTAL);
 								Ready_ChainInterpolation(Abgt::TOTAL, Abgt(i), iReAnimIdx);
-							}*/
-
-							Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt::TOTAL);
-							Ready_ChainInterpolation(Abgt::TOTAL, Abgt(i), iReAnimIdx);
-
+							}
 
 #ifdef _DEBUG
 
