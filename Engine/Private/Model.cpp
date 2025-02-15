@@ -2068,14 +2068,14 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 									return false;
 								}
 
-								_int iReAnimIdx = ChangeGroups[iCurDstInterpolationingAnimIdx].second;
+								_int iReAnimIdx = ChangeGroups[iCurInterpolationingGroupIdx].second;
 								if (iReAnimIdx == NON)
 									continue;
 
 								if (iCurDstInterpolationingAnimIdx == iReAnimIdx)
 									continue;
 
-								Ready_ChainInterpolation(Abgt(iCurDstInterpolationingAnimIdx), Abgt(iCurDstInterpolationingAnimIdx), iReAnimIdx);
+								Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
 
 
 #ifdef _DEBUG
