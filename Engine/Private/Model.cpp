@@ -921,17 +921,17 @@ void CModel::Finalize_Interpolation_When_TotalToTotal(Abgt eSrcInterpolationGrou
 // 위 경우 iTotalInterpolationRequestCnt는 무조건 2개 이상이다.
 void CModel::Finalize_Interpolation_When_TotalToNotTotal(Abgt eSrcInterpolationGroup, Abgt eDstStartAnimGroup)
 {
-	const _int iEndValue = -8;
+	const _int iEndValue = -((tot - low) + 1);
 
 	// 현재 그룹이 모든 보간이 끝났는지 확인한다
 	_int iEndInterpolationSumPre = 0;
-	for (_int iDstBlendGroup = iLower; iDstBlendGroup <= iTotal; ++iDstBlendGroup)
+	for (_int iDstBlendGroup = low; iDstBlendGroup <= tot; ++iDstBlendGroup)
 		iEndInterpolationSumPre += m_BlendGroups[_int(eSrcInterpolationGroup)].InterpolationInfo.InterpolationDstGroupIdices[iDstBlendGroup];
 
 	if (iEndValue == iEndInterpolationSumPre)
 		return;
 
-	for (_int iGroupIdx = iLower; iGroupIdx <= iTotal; ++iGroupIdx)
+	for (_int iGroupIdx = low; iGroupIdx <= tot; ++iGroupIdx)
 	{
 		_int iDstInterpolationAnimIdx = m_BlendGroups[_int(eSrcInterpolationGroup)].InterpolationInfo.InterpolationDstGroupIdices[iGroupIdx];
 		if (iDstInterpolationAnimIdx != -1)
@@ -971,7 +971,7 @@ void CModel::Finalize_Interpolation_When_TotalToNotTotal(Abgt eSrcInterpolationG
 	// 보간의 목적지의 애니매이션 인덱스 합이 -6이라면 모든 보간의 finalize가 끝났다는 것을 의미한다. -> 현재 그룹의 애니매이션 정보, 보간 정보를 초기화 해준다.
 	// 현재 그룹이 모든 보간이 끝났는지 확인한다
 	_int iEndInterpolationSum = 0;
-	for (_int iDstBlendGroup = (_int)Abgt::LOWER_BODY; iDstBlendGroup < (_int)Abgt::BLEND_END; ++iDstBlendGroup)
+	for (_int iDstBlendGroup = low; iDstBlendGroup <= tot; ++iDstBlendGroup)
 		iEndInterpolationSum += m_BlendGroups[_int(eSrcInterpolationGroup)].InterpolationInfo.InterpolationDstGroupIdices[iDstBlendGroup];
 
 	// 현재 그룹의 모든 보간이 끝났다. -> 초기화를 해준다.
@@ -1019,9 +1019,9 @@ void CModel::Finalize_Interpolation_When_TotalToNotTotal(Abgt eSrcInterpolationG
 		}
 
 		// 다른 그룹에서 보간이 끝났는지 아닌지 확인해준다.
-		if (eSrcInterpolationGroup == Abgt::TOTAL)
+		if (eSrcInterpolationGroup == tot)
 		{
-			for (_int i = (_int)Abgt::LOWER_BODY; i < (_int)Abgt::BLEND_END; ++i)
+			for (_int i = low; i <= tot; ++i)
 			{
 				if (!m_BlendGroups[i].AnimInfo.bUse && m_BlendGroups[i].AnimInfo.bInterpolationing)
 					memset(m_BlendGroups[i].InterpolationInfo.InterpolationDstGroupIdices, -1, sizeof m_BlendGroups[i].InterpolationInfo.InterpolationDstGroupIdices);
