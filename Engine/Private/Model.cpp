@@ -796,7 +796,7 @@ void CModel::Finalize_Interpolation_When_NotTotalTo(Abgt eSrcInterpolationGroup,
 		m_BlendGroups[iTotal].AnimInfo.bInterpolationing = false;
 		m_BlendGroups[iTotal].InterpolationInfo.bChainInterpolation = false;
 		
-		m_BlendGroups[iTotal].InterpolationInfo.fInterpolationCurTrackPos - 0.f;
+		m_BlendGroups[iTotal].InterpolationInfo.fInterpolationCurTrackPos = 0.f; // 250215
 		Reset_InterpolationDstIndices(Abgt::TOTAL);
 
 		// 보간이 끝나고 새롭게 재생할 애니매이션 TrackPos(시작 위치)를 맞춘다.
