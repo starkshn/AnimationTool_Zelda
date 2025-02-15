@@ -1811,7 +1811,7 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 							Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(i), iReAnimIdx);
 						}
 					}
-					// NON이 아니라면 tot -> tot로의 보간중이다.
+					// NON이 아니라면 tot -> tot로의 보간중이다. (250215 수정)
 					else
 					{
 						_int iCurDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, tot);
