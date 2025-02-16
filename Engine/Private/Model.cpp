@@ -1502,15 +1502,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 
 							// tot -> A -> tot로의 보보간 요청을 한다.
 							Ready_ChainInterpolation(Abgt::TOTAL, Abgt::TOTAL, iReAnimIdx);
-
-#ifdef _DEBUG
-							
-							cout << "======================================" << endl;
-							cout << "Change Anim : tot -> tot " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
-
 						}
 					}
 					// iCheckAnimIdx != NON 이면 tot -> tot로의 보간중임을 의미한다.
@@ -1522,15 +1513,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 						if (iReAnimIdx != iCurDstInterpolationingAnimIdx)
 						{
 							Ready_ChainInterpolation(Abgt::TOTAL, Abgt::TOTAL, iReAnimIdx);
-
-#ifdef _DEBUG
-
-							cout << "======================================" << endl;
-							cout << "Change Anim : tot -> tot " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
-
 						}
 					}
 				}
@@ -1553,15 +1535,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 						Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt(iCurDstInterpolationingGroupIdx));
 						
 						Ready_ChainInterpolation(Abgt::TOTAL, Abgt::TOTAL, iReAnimIdx);
-
-#ifdef _DEBUG
-
-						cout << "======================================" << endl;
-						cout << "Change Anim : tot -> tot " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-						cout << "======================================" << endl;
-
-#endif
-
 					}
 				}
 			}
@@ -1603,15 +1576,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 					{
 						Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
 
-#ifdef _DEBUG
-
-						cout << "======================================" << endl;
-						cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << iCurInterpolationingGroupIdx << endl;
-						cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-						cout << "======================================" << endl;
-
-#endif
-
 					}
 				}
 				// iCurInterpolationingGroupIdx 그룹은 tot 그룹으로의 보간중이다.
@@ -1630,15 +1594,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 					if (iReAnimIdx != iCurDstInterpolationingAnimIdx)
 					{
 						Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt::TOTAL, iReAnimIdx);
-
-#ifdef _DEBUG
-
-						cout << "======================================" << endl;
-						cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << tot << endl;
-						cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-						cout << "======================================" << endl;
-
-#endif
 					}
 				}
 			}
@@ -1689,16 +1644,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 						{
 
 							Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
-
-
-#ifdef _DEBUG
-
-							cout << "======================================" << endl;
-							cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << iCurInterpolationingGroupIdx << endl;
-							cout << "Change Anim : " << iCurDstSameGroupInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
 						}
 					}
 					// 상하.. 그룹이 tot로의 보간중이다.
@@ -1713,14 +1658,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 
 							Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt::TOTAL, iReAnimIdx);
 
-#ifdef _DEBUG
-
-							cout << "======================================" << endl;
-							cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << tot << endl;
-							cout << "Change Anim : " << iCurDstSameGroupInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
 						}
 					}
 				}
@@ -1811,9 +1748,11 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 							Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(i), iReAnimIdx);
 						}
 					}
-					// NON이 아니라면 tot -> tot로의 보간중이다. (250215 수정)
+					// NON이 아니라면 tot -> tot로의 보간중이다. (250215 수정) , 보간 요청 개수는 2개이다.
 					else
 					{
+						// A : 변경 요청은 2개 이고, tot -> tot로 보간중인 경우이다. 변경 요청은 2개이기 때문에 무조건 '상하'(그 이상)로의 변경 요청임을 알 수 있다.
+						// A의 경우 A -> B -> BC(상하)로 보간을 수행할 경우 tot -> 하체(B -> C)로의 보간은 수행되지만 상체에 대한 애니매이션 재생여부가 없기 때문에 굳는다.
 						_int iCurDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, tot);
 
 						for (_int i = low; i < tot; ++i)
@@ -1829,17 +1768,48 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 								Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt::TOTAL);
 								Ready_ChainInterpolation(Abgt::TOTAL, Abgt(i), iReAnimIdx);
 							}
-
-#ifdef _DEBUG
-
-							cout << "======================================" << endl;
-							cout << "Change Anim Group : " << tot << " -> " << i << endl;
-							cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
-
 						}
+
+						// =====================================================================================================================================================
+						// EX : A (예외처리, 250215)
+						{
+							// A의 예외 처리
+							// 모든 그룹을 확인해본다. A -> B -> BC(상하)의 경우 
+							// 토탈 -> 하체는 넘기고 상체의 애니매이션이 다르기 때문에 토탈 -> 하체로 보간을 한다. 
+							// 이렇게 되면 현재 재생되는 애니매이션은 0개, 보간 하는 애니매이션 1개이다. 토탈 -> 하체로의 보간은 수행되지만 상체는 애니매이션을 재생하지 못한다.
+							// 그렇기 때문에 현재 사용중인 그룹 개수(iUsingGroupCnt)를 확인한다. 
+							// iUsingGroupCnt가 0개이고 tot에서 재생하던 애니매이션과 변경 요청이 온 애니매이션이 같은 경우 해당 그룹에 애니매이션 정보를 넘겨준다.
+							// ex) A -> B, BC(상하 요청) 의 경우 1. [전체(B) -> 하체(C) 보간을 수행] 2. [상체(없음) -> 상체(B)를 전달받아 그대로 재생] 
+
+							_int iUsingGroupCnt = 0;
+							for (_int i = low; i < tot; ++i)
+							{
+								if (Is_Use_Condition(m_BlendGroups[i]))
+									++iUsingGroupCnt;
+							}
+
+							// 사용중인 그룹이 0개 이면 확인해서 어떤 그룹 재생 해주어야할지 결정해준다.
+							if (!iUsingGroupCnt)
+							{
+								for (_int i = low; i < tot; ++i)
+								{
+									if (ChangeGroups[i].second == NON) // i번 요청 그룹이 NON이면 건너뛴다.
+										continue;
+
+									_int iReGroupIdx = i;
+									_int iReAnimIdx = ChangeGroups[i].second;
+
+									// i번 요청 그룹의 애니매이션이 현재 보간중인 애니매이션과 같다면
+									// A -> B | BC 경우 상체에 대한 부분을 처리 해준다.
+									if (iCurDstInterpolationingAnimIdx == iReAnimIdx) 
+									{
+										Ready_ToPlay_Anim(Abgt(iReGroupIdx), m_BlendGroups[tot].AnimInfo);
+									}
+								}
+							}
+						}
+						// =====================================================================================================================================================
+
 					}
 				}
 				// tot 그룹에서 보간중인데 보간 중인 그룹의 개수가 2개인 경우 tot -> AB 이런식의 보간 중인 상황이다.
@@ -1867,15 +1837,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 									break;
 
 								Ready_ChainInterpolation(Abgt::TOTAL, Abgt(j), iReAnimIdx);
-
-#ifdef _DEBUG
-
-								cout << "======================================" << endl;
-								cout << "Change Anim Group : " << iCurDstInterpolationingGroupIdx << " -> " << j << endl;
-								cout << "Change Anim : " << iCurDstInterpolationingGroupAnimIdx << " -> " << iReAnimIdx << endl;
-								cout << "======================================" << endl;
-
-#endif
 								break;
 
 							}
@@ -1979,15 +1940,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 
 									Reset_DstInterpolationIdx(Abgt(iCurInterpolationingGroupIdx), Abgt(tot));
 									Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(j), iReAnimIdx);
-
-#ifdef _DEBUG
-
-									cout << "======================================" << endl;
-									cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << j << endl;
-									cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-									cout << "======================================" << endl;
-
-#endif
 								}
 							}
 							// tot -> A, B 로의 보간중이다.
@@ -2003,16 +1955,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 									{
 										Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt(j));
 										Ready_ChainInterpolation(Abgt::TOTAL, Abgt(j), iReAnimIdx);
-
-
-#ifdef _DEBUG
-
-										cout << "======================================" << endl;
-										cout << "Change Anim Group : " << tot << " -> " << j << endl;
-										cout << "Change Anim : " << Get_Dst_InterAnimIdx(Abgt::TOTAL, j) << " -> " << iReAnimIdx << endl;
-										cout << "======================================" << endl;
-
-#endif
 
 										break;
 									}
@@ -2037,15 +1979,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 								{
 									Reset_DstInterpolationIdx(Abgt::TOTAL, Abgt(j));
 									Ready_ChainInterpolation(Abgt::TOTAL, Abgt(j), iReAnimIdx);
-
-#ifdef _DEBUG
-
-									cout << "======================================" << endl;
-									cout << "Change Anim Group : " << tot << " -> " << j << endl;
-									cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-									cout << "======================================" << endl;
-
-#endif
 
 								}
 							}
@@ -2084,16 +2017,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 
 								Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
 
-
-#ifdef _DEBUG
-
-								cout << "======================================" << endl;
-								cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << iCurInterpolationingGroupIdx << endl;
-								cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-								cout << "======================================" << endl;
-
-#endif
-
 							}
 							// NON이 아니라면 tot로의 보간중이다. A 그룹이 tot로의 보간중이다. 근데 변경 요청으로 2개가 들어온 상황이다. A -> tot 보간중인데 CD 이런식의 변경 요청
 							else
@@ -2108,14 +2031,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 
 								Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
 
-#ifdef _DEBUG
-
-								cout << "======================================" << endl;
-								cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << iCurInterpolationingGroupIdx << endl;
-								cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-								cout << "======================================" << endl;
-
-#endif
 							}
 						}
 					}
@@ -2149,16 +2064,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 						if (iCurDstInterpolationingAnimIdx != iReAnimIdx)
 						{
 							Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(iCurInterpolationingGroupIdx), iReAnimIdx);
-
-
-#ifdef _DEBUG
-
-							cout << "======================================" << endl;
-							cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << iCurInterpolationingGroupIdx << endl;
-							cout << "Change Anim : " << iCurDstInterpolationingAnimIdx << " -> " << iReAnimIdx << endl;
-							cout << "======================================" << endl;
-
-#endif
 						}
 					}
 					// 상 -> 토탈 로의 보간중이다.
@@ -2174,15 +2079,6 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 								Reset_DstInterpolationIdx(Abgt(iCurInterpolationingGroupIdx), Abgt::TOTAL);
 								Ready_ChainInterpolation(Abgt(iCurInterpolationingGroupIdx), Abgt(j), ChangeGroups[j].second);
 
-
-#ifdef _DEBUG
-
-								cout << "======================================" << endl;
-								cout << "Change Anim Group : " << iCurInterpolationingGroupIdx << " -> " << j << endl;
-								cout << "Change Anim : " << iCheckAnimIdx << " -> " << ChangeGroups[j].second << endl;
-								cout << "======================================" << endl;
-
-#endif
 							}
 						}
 					}

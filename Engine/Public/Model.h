@@ -37,6 +37,7 @@ public:
 		_bool bIsLoop = true;
 		_bool bUpdate = true;			// 현재 그룹에서 사용하는 애니매이션 업데이트 여부
 
+
 	} ANIM_INFO; // 250125
 	
 	typedef struct BlendGroupInterpolationInfo
@@ -280,6 +281,10 @@ public:
 		static vector<pair<Abgt, _int>> InterpolationingGroups(_int(Abgt::BLEND_END), make_pair(Abgt::NONE, -1)); // 보간 중인 그룹 벡터
 		static vector<pair<Abgt, _int>> ChainInterpolationingGroups(_int(Abgt::BLEND_END), make_pair(Abgt::NONE, -1)); // 보보간 이상 중인 그룹 벡터
 
+		// 가장 긴 요소의 너비 계산
+		const _int maxWidth = 5;
+
+
 		for (_int i = iLower; i <= iTotal; ++i)
 			ChangeGroups[i] = make_pair(Abgt::NONE, -1);
 
@@ -344,43 +349,277 @@ public:
 				return false;
 			}
 		}
-		
 
+#ifdef _DEBUG
+		const static array<const _char*, tot + 1> AnimTypeStr = { "NON", "LOWER_BODY", "UPPER_BODY", "ARM_LEFT", "ARM_RIGHT", "HEAD", "TOTAL" };
+#endif
 
-#pragma region "보보간 이상인 그룹들 처리"
-		
+	
+#pragma region "(디버그 콘솔창 출력) Change_Anim 시작"
 
+#ifdef _DEBUG
 
+		cout << endl;
+		cout << endl;
+		cout << "====================================================" << m_iChangeAnimCnt << " 번째 " << "Change_Anim 처리 결과 ====================================================" << endl;
+		cout << endl;
+		cout << endl;
 
-#pragma endregion
-
-		Process_ChainInterpolationGroups(iChainInterpolationingCnt, iRequestCnt, ChainInterpolationingGroups, ChangeGroups);
-
-#pragma region "보간중인 그룹 처리"
-
-		// ==============================================================================================================
-		// 
-		// InterpolationingGroups
-		// 
-		// [X][X][X][X][A] : Src
-		// 
-		//		||
-		// 
-		// [A][B][X][X][X] : Src (보간중)
-		// [A][C][X][X][X] : Dst (요청)
-		// 
-		//		||
-		// 
-		// [A][C][X][X][X] : Src A그룹은 보보간하지 않고, B 그룹은 보간을 한다.
-		// 
-		// 
-		// 
-		// ==============================================================================================================
+#endif
 
 #pragma endregion
 
-		// Process_UsingGroups에서 처리 되어서 보간 중인 그룹들에 대해서 조건에 맞는 경우 보보간 처리를 한다.
-		Process_InterpolationingGroups(iInterpolationingCnt, iRequestCnt, InterpolationingGroups, ChangeGroups);
+
+#pragma region "(디버그 콘솔창 출력) 변경 요청 애니매이션"
+
+		cout << endl;
+		cout << "-------------------- 변경 요청 애니매이션 정보 --------------------" << endl;
+		cout << endl;
+		for (_int i = low; i <= tot; ++i)
+		{
+			if (ChangeGroups[i].second == NON)
+				continue;
+
+			cout << setw(30) << "[ Anim Group | " << AnimTypeStr[i] << " ] " << " [ Anim Idx | " << ChangeGroups[i].second << " ] " << " [ Anim Name | " << m_Animations[i]->Get_AnimName() << " ] " << endl;
+		}
+
+		cout << endl;
+		cout << "-------------------- 변경 요청 애니매이션 정보 --------------------" << endl;
+		cout << endl;
+
+#pragma endregion
+
+
+
+		// 보보간 이상에 대한 철;
+		if (iChainInterpolationingCnt)
+		{
+
+#pragma region "(디버그 콘솔창 출력) 보보간 이상 수행중인 그룹들 변경 요청전 데이터 임시 보관 로직"
+#ifdef _DEBUG 
+
+			vector<_int> vecChainInterpolationingGroups(tot + 1, NON); // 보보간 이상 수행중인 그룹들을 담는 벡터
+			vector<vector<_int>> vecOriginChainInterpolationingGroups(tot + 1, vector<_int>(tot + 1, NON)); // 보보간 이상 수행중인 그룹들이 보보간 이상중이던 목적지 그룹을 담는 벡터
+
+			for (_int i = low; i <= tot; ++i)
+			{
+				for (_int j = low; j <= tot; ++j)
+					vecOriginChainInterpolationingGroups[i][j] = Get_Dst_InterAnimIdx(Abgt(i), j);
+
+				if (ChainInterpolationingGroups[i].second != NON)
+					vecChainInterpolationingGroups[i] = ChainInterpolationingGroups[i].second;
+			}
+
+#endif
+#pragma endregion
+
+#pragma region "(주석 설명) 보간중인 그룹 처리 로직 설명"
+
+			// ==============================================================================================================
+			// 
+			// InterpolationingGroups
+			// 
+			// [X][X][X][X][A] : Src
+			// 
+			//		||
+			// 
+			// [A][B][X][X][X] : Src (보간중)
+			// [A][C][X][X][X] : Dst (요청)
+			// 
+			//		||
+			// 
+			// [A][C][X][X][X] : Src A그룹은 보보간하지 않고, B 그룹은 보간을 한다.
+			// 
+			// 
+			// 
+			// ==============================================================================================================
+
+#pragma endregion
+
+			// 보보간 이상 처리
+			Process_ChainInterpolationGroups(iChainInterpolationingCnt, iRequestCnt, ChainInterpolationingGroups, ChangeGroups);
+
+#pragma region "(디버그 콘솔창 출력) 보보간 이상인 경우에 대해 변경 요청에 따라 변경된 결과 출력"
+
+#ifdef _DEBUG
+
+			for (_int i = low; i <= tot; ++i)
+			{
+				// 보보간 이상중인 그룹이 NON이면 건너 뛴다.
+				if (vecChainInterpolationingGroups[i] == NON)
+					continue;
+
+				
+				// Process_ChainInterpolationGroups 를 통과하고난 그룹과 vecTempBG[i] 번 그룹을 비교해서 변경사항이 무엇이 있는지 확인한다.
+				_int iOriginChainInterpolationingGroupIdx = i; // 보보간 이상을 수행중인던 그룹 인덱스
+				_int iOriginChainInterpolationingCnt = Get_Dst_Interpolationing_Cnt(Abgt(iOriginChainInterpolationingGroupIdx)); // 보보간 이상을 수행중이던 그룹이 향하던 보보간 이상의 그룹 개수
+
+				
+				cout << endl;
+				cout << "-------------------- 보보간 이상 처리 결과 --------------------" << endl;
+				cout << endl;
+
+				
+				_int iPrevChainInterpolationingAnimIdx = ChainInterpolationingGroups[i].second;
+				string strPrevChainInterpolationingAnimName = m_Animations[i]->Get_AnimName();
+				cout << AnimTypeStr[i] << '(' << iOriginChainInterpolationingGroupIdx << ')' << " | 번 그룹은 " << strPrevChainInterpolationingAnimName << '(' << iPrevChainInterpolationingAnimIdx << ')' << " 애니매이션 에서부터" << "보보간 이상을 수행중이였다." << endl;
+
+				cout << AnimTypeStr[i] << '(' << iOriginChainInterpolationingGroupIdx << ')' << " | 번 그룹이 보보간 이상을 수행중인 목적지 그룹 개수 | " << iOriginChainInterpolationingCnt << endl;
+				cout << AnimTypeStr[i] << '(' << iOriginChainInterpolationingGroupIdx << ')' << " | 번 그룹의 보보간 이상의 수행중과 변경후 결과" << endl;
+
+				// 수행중이던 보간 목적지 출력
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+						
+						
+					cout << '[';
+
+					if (vecOriginChainInterpolationingGroups[i][j] != NON)
+						cout << setw(maxWidth) << vecOriginChainInterpolationingGroups[i][j];
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+				}
+				cout << endl;
+
+				// 수행후인 보간 목적지(결과) 출력
+
+
+
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+
+					cout << '[';
+
+					if (Get_Dst_InterAnimIdx(Abgt(i), j) != NON)
+						cout << setw(maxWidth) << Get_Dst_InterAnimIdx(Abgt(i), j);
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+				}
+				cout << endl;
+
+
+				cout << endl;
+				cout << "-------------------- 보보간 이상 처리 결과 --------------------" << endl;
+				cout << endl;
+
+				
+			}
+
+#endif
+#pragma endregion
+
+		}
+
+
+		// 보간 이상에 대한 처리
+		if (iInterpolationingCnt)
+		{
+
+#pragma region "(디버그 콘솔창 출력) 보간 이상 수행중인 그룹들 변경 요청전 데이터 임시 보관 로직"
+#ifdef _DEBUG 
+
+			vector<_int> vecInterpolationingGroups(tot + 1, NON);
+			vector<vector<_int>> vecOriginInterpolationingGroups(tot + 1, vector<_int>(tot + 1, NON));
+
+			for (_int i = low; i <= tot; ++i)
+			{
+				for (_int j = low; j <= tot; ++j)
+					vecOriginInterpolationingGroups[i][j] = Get_Dst_InterAnimIdx(Abgt(i), j);
+
+				if (InterpolationingGroups[i].second != NON)
+					vecInterpolationingGroups[i] = InterpolationingGroups[i].second;
+			}
+
+#endif
+#pragma endregion
+
+			// Process_UsingGroups에서 처리 되어서 보간 중인 그룹들에 대해서 조건에 맞는 경우 보보간 처리를 한다.
+			Process_InterpolationingGroups(iInterpolationingCnt, iRequestCnt, InterpolationingGroups, ChangeGroups);
+
+#pragma region "(디버그 콘솔창 출력) 보간 이상인 경우에 대해 변경 요청에 따라 변경된 결과 출력"
+
+#ifdef _DEBUG
+
+			for (_int i = low; i <= tot; ++i)
+			{
+				// 보보간 이상중인 그룹이 NON이면 건너 뛴다.
+				if (vecInterpolationingGroups[i] == NON)
+					continue;
+
+
+				// Process_ChainInterpolationGroups 를 통과하고난 그룹과 vecTempBG[i] 번 그룹을 비교해서 변경사항이 무엇이 있는지 확인한다.
+				_int iOriginInterpolationingGroupIdx = i; // 보보간 이상을 수행중인던 그룹 인덱스
+				_int iOriginInterpolationingCnt = Get_Dst_Interpolationing_Cnt(Abgt(iOriginInterpolationingGroupIdx)); // 보보간 이상을 수행중이던 그룹이 향하던 보보간 이상의 그룹 개수
+
+
+				cout << endl;
+				cout << "-------------------- 보간 이상 처리 결과 --------------------" << endl;
+				cout << endl;
+
+
+				_int iPrevInterpolationingAnimIdx = InterpolationingGroups[i].second;
+				string strPrevInterpolationingAnimName = m_Animations[i]->Get_AnimName();
+				cout << AnimTypeStr[i] << '(' << iOriginInterpolationingGroupIdx << ')' << " | 번 그룹은 " << strPrevInterpolationingAnimName << '(' << iPrevInterpolationingAnimIdx << ')' << " 애니매이션 에서부터" << "보간 이상을 수행중이였다." << endl;
+
+				cout << AnimTypeStr[i] << '(' << iOriginInterpolationingGroupIdx << ')' << " | 번 그룹이 보간 이상을 수행중인 목적지 그룹 개수 | " << iOriginInterpolationingCnt << endl;
+				cout << AnimTypeStr[i] << '(' << iOriginInterpolationingGroupIdx << ')' << " | 번 그룹의 보간 이상의 수행중과 변경후 결과" << endl;
+
+				// 수행중이던 보간 목적지 출력
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+
+
+					cout << '[';
+
+					if (vecOriginInterpolationingGroups[i][j] != NON)
+						cout << setw(maxWidth) << vecOriginInterpolationingGroups[i][j];
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+
+				}
+				cout << endl;
+
+				// 수행후인 보간 목적지(결과) 출력
+
+
+
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+
+					cout << '[';
+
+					if (Get_Dst_InterAnimIdx(Abgt(i), j) != NON)
+						cout << setw(maxWidth) << Get_Dst_InterAnimIdx(Abgt(i), j);
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+
+				}
+				cout << endl;
+
+
+				cout << endl;
+				cout << "-------------------- 보간 이상 처리 결과 --------------------" << endl;
+				cout << endl;
+
+
+			}
+
+#endif
+#pragma endregion
+
+		}
 
 
 #pragma region "UsingGroup 동작 방식 설명"
@@ -444,584 +683,115 @@ public:
 		// =======================================================================================================================================================
 #pragma endregion
 
-		// 사용중인 그룹들 처리를 한다.
-		// 보간도 아니고 보보간이상인 경우도 아닌 그룹들은 조건에 맞는 경우 보간 처리를 한다.
-		Process_UsingGroups(iUsingCnt, iRequestCnt, UsingGroups, ChangeGroups);
 
+		if (iUsingCnt)
 		{
-			//// 전체 -> 전체
-		//// 전체 -> 상하
-		//if (iUsingCnt == 1)
-		//{
-		//	// 전체 -> 전체
-		//	if (iRequestCnt == 1)
-		//	{
-		//		_int iRequestChangeAnimIdx = ChangeGroups[iTotal].second;
-		//		_int iCurUsingGroupAnimIdx = UsingGroups[iTotal].second;
 
-		//		if (iCurUsingGroupAnimIdx == iRequestChangeAnimIdx)
-		//			return;
+#pragma region "(디버그 콘솔창 출력) 애니매이션 수행중인 그룹들 변경 요청전 데이터 임시 보관 로직"
+#ifdef _DEBUG 
 
-		//		// 같은 경우가 아니기 때문에 보간한다.
-		//		Ready_Interpolation(Abgt::TOTAL, Abgt::TOTAL, iRequestChangeAnimIdx);
-		//		Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iTotal].InterpolationInfo);
-		//	}
-		//	// 전체 -> 상하(그 이상)
-		//	else
-		//	{
-		//		_int iCurUsingGroupAnimIdx = UsingGroups[iTotal].second;
+			vector<_int> vecUsingGroups(tot + 1, NON);
+			vector<vector<_int>> vecOriginUsingGroups(tot + 1, vector<_int>(tot + 1, NON));
 
-		//		for (_int iGroupIdx = iLower; iGroupIdx < iTotal; ++iGroupIdx)
-		//		{
-		//			_int iRequestAnimIdx = ChangeGroups[iGroupIdx].second;
-		//			if (iRequestAnimIdx == -1)
-		//				continue;
+			// 사용중인 그룹들만 담는다.
+			for (_int i = low; i <= tot; ++i)
+			{
+				for (_int j = low; j <= tot; ++j)
+					vecOriginUsingGroups[i][j] = Get_Dst_InterAnimIdx(Abgt(i), j);
 
-		//			// 전체에 해당하는 애니매이션이 요청이 온 애니매이션과 같은 경우
-		//			// iGroupIdx에 해당하는 그룹은 애니매이션 재생을 하도록 한다.
-		//			if (iCurUsingGroupAnimIdx == iRequestAnimIdx)
-		//			{
-		//				Ready_ToPlay_Anim(Abgt(iGroupIdx), m_BlendGroups[iTotal].AnimInfo);
-		//			}
-		//			// 다르다면 Total에서 보간을 하도록 설정한다.
-		//			else
-		//			{
-		//				Ready_Interpolation(Abgt::TOTAL, Abgt(iGroupIdx), iRequestAnimIdx);
-		//				Cal_Interpolation_KeyFrame(iRequestAnimIdx, m_BlendGroups[iTotal].InterpolationInfo);
-		//			}
-		//		}
-		//	}
-		//	
-		//}
-		//// 상하 -> 전체
-		//// 상하 -> 상하
-		//else
-		//{
-		//	// 상하 -> 전체
-		//	if (iRequestCnt == 1)
-		//	{
-		//		_int iRequestAnimIdx = ChangeGroups[iTotal].second;
+				if (UsingGroups[i].second != NON)
+					vecUsingGroups[i] = UsingGroups[i].second;
+			}
 
-		//		for (_int iGroupIdx = iLower; iGroupIdx < iTotal; ++iGroupIdx)
-		//		{
-		//			_int iCurGroupAnimIdx = UsingGroups[iGroupIdx].second;
-		//			if (iCurGroupAnimIdx == -1)
-		//				continue;
-
-		//			// total에 요청이 온 애니매이션 인덱스와 현재 그룹 Lower~Head 까지의 애니매이션 인덱스가 일치하는게 있다면 해당 그룹은 보간하지 않고 특정 그룹의 보간이 끝나면 total로 재생한다
-		//			if (iCurGroupAnimIdx == iRequestAnimIdx)
-		//				continue;
-
-		//			Ready_Interpolation(Abgt(iGroupIdx), Abgt::TOTAL, iRequestAnimIdx);
-		//			Cal_Interpolation_KeyFrame(iRequestAnimIdx, m_BlendGroups[iGroupIdx].InterpolationInfo);
-		//		}
-		//	}
-		//	// 상하 -> 상하(그 이상)
-		//	// 아래의 경우 무조건 1대1 대응이다.
-		//	else
-		//	{
-		//		for (_int iGroupIdx = iLower; iGroupIdx < iTotal; ++iGroupIdx)
-		//		{
-		//			_int iCurGroupUsingAnimIdx = UsingGroups[iGroupIdx].second;
-		//			if (iCurGroupUsingAnimIdx == -1)
-		//				continue;
-
-		//			// 요청이 온 애니매이션과 현재 같은 그룹의 애니매이션이 같다면 건너뛴다.
-		//			_int iRequestAnimIdx = ChangeGroups[iGroupIdx].second;
-		//			if (iRequestAnimIdx == iCurGroupUsingAnimIdx)
-		//				continue;
-
-		//			Ready_Interpolation(Abgt(iGroupIdx), Abgt(iGroupIdx), iRequestAnimIdx);
-		//			Cal_Interpolation_KeyFrame(iRequestAnimIdx, m_BlendGroups[iGroupIdx].InterpolationInfo);
-		//		}
-		//	}
-		//}
-		}
-		
-//		// UsingGroups : 보간 처리
-//		for (_int iRequestGroupIdx = iLower; iRequestGroupIdx <= iTotal; ++iRequestGroupIdx)
-//		{
-//			// 변경 요청이 온 애니매이션 인덱스가 -1이다 == iRequestGroupIdx에 요청이 온 애니매이션이 없다. == 건너 뛴다.
-//			_int iRequestChangeAnimIdx = ChangeGroups[iRequestGroupIdx].second;
-//			if (iRequestChangeAnimIdx == -1)
-//				continue;
-//
-//			// ----------------------------------- 현재 변경 요청이 온 그룹이 토탈이 아닌 경우 ---------------------------------------------
-//			if (iRequestGroupIdx != iTotal)
-//			{
-//				// Lower그룹의 애니매이션 인덱스가 -1이 아니라는 뜻은 상하 -> 상하의 경우이다.
-//				// 변경 요청이 토탈이 아니고 사용중인 그룹이 하체인 경우
-//				// [A][B][X][X][X]
-//				// [?][?][?][?][?]
-//				// 상하 -> 상하 : 1대1 대응의 애니매이션 전환 로직이 필요하다.
-//				if (UsingGroups[iLower].second != -1)
-//				{
-//					_int iCurGroupAnimIdx = UsingGroups[iRequestGroupIdx].second; // iRequestGroupIdx 그룹과 같은, 현재 사용중인 애니매이션 인덱스
-//
-//					if (iCurGroupAnimIdx == -1)
-//					{
-//#ifdef _DEBUG
-//						assert(false, "UsingGroups[iRequestGroupIdx].second는 -1일 수 없다");
-//#endif
-//						return;
-//					}
-//
-//					if (iCurGroupAnimIdx == iRequestChangeAnimIdx) // 같다면 보간할 필요 없고 건너 뛴다.
-//						continue;
-//
-//					Ready_Interpolation(Abgt(iRequestGroupIdx), Abgt(iRequestGroupIdx), iRequestChangeAnimIdx);
-//					Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iRequestGroupIdx].InterpolationInfo);
-//				}
-//				// 상하 -> 토탈 : 
-//				else
-//				{
-//					_int iCurGroupAnimIdx = UsingGroups[iGroupIdx].second;
-//
-//					// 현재 사용중인 그룹이 토탈인데 [상체, 하체, 왼팔, 오른팔, 머리] 중 일치하는 애니매이션이 존재하는 경우
-//					// 토탈의 애니매이션을 해당 그룹에 넘겨주고 일치하지 않는 부분은 보간을 수행해야한다.
-//					// A -> AB의 경우 & A -> BA
-//					if (iCurGroupAnimIdx == iRequestChangeAnimIdx)
-//					{
-//						Ready_ToPlay_Anim(Abgt(iRequestGroupIdx), );
-//
-//
-//					}
-//					// A -> BC의 경우
-//					else
-//					{
-//						Ready_Interpolation(Abgt(iGroupIdx), Abgt(iRequestGroupIdx), iRequestChangeAnimIdx);
-//						Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iGroupIdx].InterpolationInfo);
-//
-//					}
-//
-//				}
-//
-//
-//				// UsingGroup을 순회하면서 조건에 맞는지 살펴본다.
-//				for (_int iGroupIdx = iLower; iGroupIdx <= iTotal; ++iGroupIdx)
-//				{
-//					if (UsingGroups[iGroupIdx].second == -1)
-//
-//					// 토탈 -> 상하
-//					if (iGroupIdx == iTotal)
-//					{
-//						if (!iRequestCnt)
-//							break;
-//
-//						if (UsingGroups[iGroupIdx].second == -1)
-//							continue;
-//
-//						_int iCurGroupAnimIdx = UsingGroups[iGroupIdx].second;
-//
-//						// 현재 사용중인 그룹이 토탈인데 [상체, 하체, 왼팔, 오른팔, 머리] 중 일치하는 애니매이션이 존재하는 경우
-//						// 토탈의 애니매이션을 해당 그룹에 넘겨주고 일치하지 않는 부분은 보간을 수행해야한다.
-//						// A -> AB의 경우 & A -> BA
-//						if (iCurGroupAnimIdx == iRequestChangeAnimIdx)
-//						{
-//							m_BlendGroups[iRequestGroupIdx].AnimInfo.bUse = true;
-//							m_BlendGroups[iRequestGroupIdx].AnimInfo.bInterpolationing = false;
-//							if (m_BlendGroups[iRequestGroupIdx].AnimInfo.bEnd)
-//								m_BlendGroups[iRequestGroupIdx].AnimInfo.bEnd = false;
-//
-//							m_BlendGroups[iRequestGroupIdx].AnimInfo.pAnim = m_BlendGroups[iGroupIdx].AnimInfo.pAnim;
-//							m_BlendGroups[iRequestGroupIdx].AnimInfo.iAnimIdx = m_BlendGroups[iGroupIdx].AnimInfo.iAnimIdx;
-//							m_BlendGroups[iRequestGroupIdx].AnimInfo.strAnimName = m_BlendGroups[iGroupIdx].AnimInfo.strAnimName;
-//
-//							if (m_BlendGroups[iRequestGroupIdx].InterpolationInfo.bChainInterpolation)
-//								m_BlendGroups[iRequestGroupIdx].InterpolationInfo.bChainInterpolation = false;
-//
-//							m_BlendGroups[iRequestGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-//							
-//							Reset_InterpolationDstIndices(Abgt(iRequestGroupIdx));
-//						}
-//						// A -> BC의 경우
-//						else
-//						{
-//							Ready_Interpolation(Abgt(iGroupIdx), Abgt(iRequestGroupIdx), iRequestChangeAnimIdx);
-//							Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iGroupIdx].InterpolationInfo);
-//
-//						}
-//
-//						--iRequestCnt;
-//					}
-//					// 상하 -> 상하
-//					// 아래 else의 경우 무조건 1대1 대응 관계이다.
-//					else
-//					{
-//						iUsingCnt != 0 ? --iUsingCnt : iUsingCnt = 0;
-//
-//						_int iCurGroupAnimIdx = UsingGroups[iSrcIncreaseGroupIdx].second; // iRequestGroupIdx 그룹과 같은, 현재 사용중인 애니매이션 인덱스
-//						if (iCurGroupAnimIdx == -1) // 예외 처리
-//						{
-//							++iSrcIncreaseGroupIdx;
-//							continue;
-//						}
-//
-//						if (iCurGroupAnimIdx == iRequestChangeAnimIdx) // 같다면 보간할 필요 없고 건너 뛴다.
-//						{
-//							++iSrcIncreaseGroupIdx;
-//							continue;
-//						}
-//
-//						// iGroupIdx와 iRequestGroupIdx는 같다.
-//						Ready_Interpolation(Abgt(iSrcIncreaseGroupIdx), Abgt(iSrcIncreaseGroupIdx), iRequestChangeAnimIdx);
-//						Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iSrcIncreaseGroupIdx].InterpolationInfo);
-//
-//						++iSrcIncreaseGroupIdx;
-//						break;
-//					}
-//				}
-//			}
-//			// ----------------------------------- 현재 변경 요청이 온 그룹이 토탈인 경우 ---------------------------------------------
-//			else
-//			{
-//				_int iUseCnt = 0;
-//				for (_int i = iLower; i <= iTotal; ++i)
-//				{
-//					if (m_BlendGroups[i].AnimInfo.bUse)
-//						++iUseCnt;
-//				}
-//
-//				// 현재 사용중인 그룹이 2개 이상인 경우 : 상하 -> 토탈 (상 & 하 & 머리 -> 토탈 등의 경우)
-//				if (iUseCnt >= 2)
-//				{
-//					_int iInterAnimIdx = -1;
-//
-//					for (_int iGroupIdx = iLower; iGroupIdx <= iTotal; ++iGroupIdx)
-//					{
-//						if (UsingGroups[iGroupIdx].second == -1)
-//							continue;
-//
-//						// 요청이 온 애니매이션과 사용중인 그룹의 애니매이션이 같다면 보간하지 않는다.
-//						if (UsingGroups[iGroupIdx].second == iRequestChangeAnimIdx)
-//						{
-//							// 다른 그룹에서 보간할 애니매이션 인덱스를 저장한다.
-//							iInterAnimIdx = iRequestChangeAnimIdx;
-//						}
-//						// 요청이 온 애니매이션과 사용중인 그룹의 애니매이션이 다르기 때문에 보간한다.
-//						else
-//						{
-//							Ready_Interpolation(Abgt(iGroupIdx), Abgt(iRequestGroupIdx), iRequestChangeAnimIdx);
-//							Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iGroupIdx].InterpolationInfo);
-//						}
-//					}
-//				}
-//				// 현재 사용중인 그룹이 2개 미만인 경우 : 토탈 - > 토탈
-//				else
-//				{
-//					_int iCurGroupAnimIdx = UsingGroups[iRequestGroupIdx].second;
-//					if (iCurGroupAnimIdx == iRequestChangeAnimIdx) // 요청이 온 애니매이션과 같다면 건너 뛴다.
-//						continue;
-//					
-//					Ready_Interpolation_TotalToTotal(iRequestChangeAnimIdx);
-//					Cal_Interpolation_KeyFrame(iRequestChangeAnimIdx, m_BlendGroups[iRequestGroupIdx].InterpolationInfo);
-//				}
-//			}
-//		}
-//
-//		
-//		
-
-#pragma region "이전 코드"
-
-		
-			// 사용중인 현재 그룹을 돌면서 보간할 것이 있는지 살펴본다.
-			// - 현재 사용중인 그룹의 애니매이션과 변경 요청이 온 같은 그룹의 애니매이션이 있는지 확인하고, 있는 경우에 애니매이션이 다르다면 '보간'하고 같다면 그냥 넘긴다.
-			// - 현재 사용중인 그룹과 변경 요청이 온 그룹이 다른경우, 변경 요청이 온 그룹의 애니매이션과 현재 그룹의 애니매이션이 같다면 현재 애니매이션 정보를 변경 요청이온 그룹에게 그대로 전달하고, 변경 요청이 그룹의 애니매이션과 현재 그룹의 애니매이션이 다르다면 보간한다.
-			//for (_int iCurGroupIdx = iLower; iCurGroupIdx <= iTotal; ++iCurGroupIdx)
-			//{
-			//	// 보간 중이 아니고 보보간이상인 경우도 아닌 경우
-			//	// 즉 '이제 막 Change_Anim을 호출해서 보간을 하려는 상황' 이다.
-			//	if (m_BlendGroups[iCurGroupIdx].AnimInfo.bUse && !m_BlendGroups[iCurGroupIdx].AnimInfo.bInterpolationing)
-			//	{
-			//		// 그냥 보간의 조건이 되는지 먼저 확인한다.
-			//		
-			//		// 같은 그룹에 해당하는 Pair를 가져온다.
-			//		auto SameGroupChangePair = ChangeGroup[(_int)m_BlendGroups[iCurGroupIdx].DefaultInfo.eBlendGroupType];
-			//		if (SameGroupChangePair.second != -1) // 같은 그룹에 변경할 애니매이션이 존재한다.
-			//		{
-			//			if (m_BlendGroups[iCurGroupIdx].AnimInfo.iAnimIdx != SameGroupChangePair.second) // 애니매이션이 다른경우 -> 보간한다
-			//			{
-			//				m_BlendGroups[iCurGroupIdx].AnimInfo.bUse = false;
-			//				m_BlendGroups[iCurGroupIdx].AnimInfo.bInterpolationing = true;
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[(_int)SameGroupChangePair.first] = SameGroupChangePair.second;
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation = false;
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-			//				Set_InterpolationData(m_BlendGroups[iCurGroupIdx].AnimInfo.iAnimIdx, SameGroupChangePair.second, m_BlendGroups[iCurGroupIdx].InterpolationInfo);
-
-			//				if ((_int)SameGroupChangePair.first != iTotal)
-			//					ChangeGroup[(_int)SameGroupChangePair.first] = make_pair(Abgt::NONE, -1); // 같으면 그냥 넘긴다.
-
-			//				continue;
-			//			}
-			//			// 같은 그룹이고 애니매이션도 같은 경우 보간하지 않는다.
-			//			else
-			//			{
-			//				if ((_int)SameGroupChangePair.first != iTotal)
-			//					ChangeGroup[(_int)SameGroupChangePair.first] = make_pair(Abgt::NONE, -1); // 같으면 그냥 넘긴다.
-			//				continue; // 같은 그룹인데 애니매이션 인덱스도 같은데 보간 요청이 온 경우 continue를 해서 건너 뛰어준다.
-			//			}
-			//		}
-			//		
-			//		// 같은 그룹에서 애니매이션 변경이 발생하지 않은 경우
-			//		// - 변경 요청이 온 다른 그룹의 애니매이션과 현재 그룹의 애니매이션이 같다면 현재 그룹의 애니매이션 정보를 그대로 넘긴다.
-			//		// - 변경 요청이 온 다른 그룹의 애니매이션과 현재 그룹의 애니매이션이 다르다면 현재 그룹에서 다른 그룹의 애니매이션으로 보간한다.
-			//		for (_int iGroupIdx = iLower; iGroupIdx <= iTotal; ++iGroupIdx)
-			//		{
-			//			if (iGroupIdx == iCurGroupIdx)
-			//				continue;
-
-			//			if (ChangeGroup[iGroupIdx].second == -1)
-			//				continue;
-
-			//			if (m_BlendGroups[iCurGroupIdx].AnimInfo.iAnimIdx == ChangeGroup[iGroupIdx].second) // 현재 그룹과 변경 요청이 온 다른 그룹의 애니매이션이 같다면, 정보를 그대로 넘긴다.
-			//			{
-			//				// 해당 그룹이 사용중이 아니라면
-			//				if (!m_BlendGroups[iGroupIdx].AnimInfo.bUse)
-			//				{
-			//					m_BlendGroups[iGroupIdx].AnimInfo = m_BlendGroups[iCurGroupIdx].AnimInfo;
-			//					m_BlendGroups[iGroupIdx].AnimInfo.bUse = true;
-			//					m_BlendGroups[iGroupIdx].AnimInfo.bEnd = false;
-			//					m_BlendGroups[iGroupIdx].AnimInfo.bInterpolationing = false;
-
-			//					if (m_BlendGroups[iGroupIdx].InterpolationInfo.bChainInterpolation)
-			//						m_BlendGroups[iGroupIdx].InterpolationInfo.bChainInterpolation = false;
-			//					m_BlendGroups[iGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-			//					fill(m_BlendGroups[iGroupIdx].InterpolationInfo.InterpolationDstGroupIdices, m_BlendGroups[iGroupIdx].InterpolationInfo.InterpolationDstGroupIdices + iTotal, -1);
-
-			//					continue;
-			//				}
-
-			//				if (m_BlendGroups[iCurGroupIdx].AnimInfo.bUse)
-			//				{
-			//					m_BlendGroups[iCurGroupIdx].AnimInfo.bUse = false;
-			//					m_BlendGroups[iCurGroupIdx].AnimInfo.bInterpolationing = true;
-
-			//					if (m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation)
-			//						m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation = false;
-
-			//					m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-			//					fill(m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices, m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices + iTotal, -1);
-			//				}
-			//			}
-			//			else // 현재 그룹과 변경 요청이 온 다른 그룹의 애니매이션이 다르다면, 보간한다.
-			//			{
-			//				// 현재 그룹 사용 false, 현 그룹 보간 true, 현 그룹 보보간 이상 false, 현 그룹 보간 거리 0.f, 현 그룹 보간 목적지에 ChangeGroup[iGroupIdx].second 대입
-			//				m_BlendGroups[iCurGroupIdx].AnimInfo.bUse = false;
-			//				m_BlendGroups[iCurGroupIdx].AnimInfo.bInterpolationing = true;
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation = false; // 250130
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f; // 250130
-			//				m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iGroupIdx] = ChangeGroup[iGroupIdx].second;
-			//				
-			//				memset(m_BlendGroups[iGroupIdx].InterpolationInfo.InterpolationDstGroupIdices, -1, sizeof m_BlendGroups[iGroupIdx].InterpolationInfo.InterpolationDstGroupIdices);
-
-			//				if (iGroupIdx != iTotal)
-			//					ChangeGroup[iGroupIdx] = make_pair(Abgt::NONE, -1);
-
-			//				Set_InterpolationData(m_BlendGroups[iCurGroupIdx].AnimInfo.iAnimIdx, ChangeGroup[iGroupIdx].second, m_BlendGroups[iCurGroupIdx].InterpolationInfo);
-			//			}
-			//		}
-			//	}
-			//	// 보보간 요청이거나 보보보간 이상의 경우
-			//	else if (!m_BlendGroups[iCurGroupIdx].AnimInfo.bUse && m_BlendGroups[iCurGroupIdx].AnimInfo.bInterpolationing)
-			//	{
-			//		// 보보간 요청인경우
-			//		if (!m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation)
-			//		{
-			//			for (_int iInterGroupIdx = iLower; iInterGroupIdx <= iTotal; ++iInterGroupIdx)
-			//			{
-			//				// 현재 그룹에서 보간 중이던 애니매이션 인덱스
-			//				_int iCurGroupDstInterpolationAnimIdx = m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iInterGroupIdx];
-			//				if (iCurGroupDstInterpolationAnimIdx == -1)
-			//					continue;
-
-			//				_int iSameGroupInterpolationAnimIdx = ChangeGroup[iInterGroupIdx].second; // 보간중일때 보보간 요청이 온 같은 그룹의 애니매이션 인덱스
-
-			//				if (iSameGroupInterpolationAnimIdx != -1) // -1이 아니라면 같은 그룹에 보보간 요청이 온 애니매이션이 있다는 뜻이다. 같은 그룹끼리의 보보간이다.
-			//				{
-			//					if (iCurGroupDstInterpolationAnimIdx == iSameGroupInterpolationAnimIdx)
-			//					{
-			//						// assert(false && "보보간인데 애니매이션 인덱스가 동일하다!");
-			//						// return;
-			//						continue;
-			//					}
-			//					else // 애니매이션 인덱스가 다르기 때문에 보보간 해야한다
-			//					{
-			//						// 현재 그룹의 목적지 보간 애니매이션 인덱스를 변경하고 보간 거리를 초기화 한다.
-			//						m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iInterGroupIdx] = iSameGroupInterpolationAnimIdx;
-			//						m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f; // 250130
-
-			//						if (!m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation) // 보보간 중이 아니라면 보보간을 한다고 설정한다.
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation = true;
-
-			//						if (iCurGroupIdx == iTotal)
-			//							ChangeGroup[iInterGroupIdx] = make_pair(Abgt::NONE, -1);
-			//					}
-
-			//					// 보보간 요청 목록의 애니매이션 인덱스 합이 -6이라면 더이상 요청이 없는 것이기 때문에 끝낸다.
-			//					_int iSum = 0;
-			//					for (_int i = iLower; i <= iTotal; ++i)
-			//						iSum += ChangeGroup[i].second;
-			//					if (iSum == -6)
-			//						return;
-			//				}
-			//				// 같은 그룹끼리의 보보간이 아니다
-			//				else
-			//				{
-			//					for (_int iBlendGroupIdx = iLower; iBlendGroupIdx <= iTotal; ++iBlendGroupIdx)
-			//					{
-			//						// 원래 보간 중이던 보간 목적지 인덱스를 없앤다.
-			//						if (m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] != -1)
-			//						{
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = -1;
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-			//						}
-			//					}
-
-			//					for (_int iBlendGroupIdx = iLower; iBlendGroupIdx <= iTotal; ++iBlendGroupIdx)
-			//					{
-			//						// 보보간 요청이 온 애니매이션 인덱스가 -1이 아닌 경우
-			//						if (ChangeGroup[iBlendGroupIdx].second != -1)
-			//						{
-			//							// 현재 그룹이 TOTAL인 경우
-			//							if (iCurGroupIdx == iTotal)
-			//							{
-			//								m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//							}
-			//							// 현재 그룹이 TOTAL이 아닌 경우
-			//							else
-			//							{
-			//								if (iBlendGroupIdx == iTotal)
-			//								{
-			//									if (iCurGroupIdx == iBlendGroupIdx)
-			//										m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//								}
-			//								else
-			//								{
-			//									if (iCurGroupIdx == iBlendGroupIdx)
-			//									{
-			//										m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//										ChangeGroup[iBlendGroupIdx] = make_pair(Abgt::NONE, -1);
-			//									}
-			//								}
-			//							}
-
-			//							if (!m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation)
-			//								m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation = true;
-
-			//							_int iSum = 0;
-			//							for (_int i = iLower; i <= iTotal; ++i)
-			//								iSum += ChangeGroup[i].second;
-			//							if (iSum == -6)
-			//								return;
-			//						}
-			//					}
-			//				}
-			//			}
-			//		}
-			//		// 보보보간 이상의 요청인 경우
-			//		else if (m_BlendGroups[iCurGroupIdx].InterpolationInfo.bChainInterpolation)
-			//		{
-			//			for (_int iInterpolationGroupIdx = iLower; iInterpolationGroupIdx <= iTotal; ++iInterpolationGroupIdx)
-			//			{
-			//				// '현재 그룹에서 보보간 이상이라면'
-			//				if (m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iInterpolationGroupIdx] != -1)
-			//				{
-			//					// 현재 그룹의 보간중인 그룹 애니매이션 인덱스
-			//					_int iOriginInterpolationAnimIdx = m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iInterpolationGroupIdx];
-
-			//					// 보간중일때 보보보간 이상의 요청이 온 같은 그룹의 애니매이션 인덱스
-			//					_int iSameGroupInterpolationAnimIdx = (_int)ChangeGroup[iInterpolationGroupIdx].second;
-
-			//					if (iSameGroupInterpolationAnimIdx != -1) // -1이 아니라면 같은 그룹에 보보보간 이상의 요청이 온 애니매이션이 있다는 뜻이다. 같은 그룹끼리의 보보간이다.
-			//					{
-			//						// 보보보간 이상인데 애니매이션 인덱스가 동일한 경우 리턴
-			//						if (iOriginInterpolationAnimIdx == iSameGroupInterpolationAnimIdx)
-			//							continue;
-			//						// 애니매이션 인덱스가 다르기 때문에 보보보간 이상 해야한다
-			//						else
-			//						{
-			//							// 현재 그룹의 목적지 보간 애니매이션 인덱스를 변경하고 보간 거리를 초기화 한다.
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iInterpolationGroupIdx] = iSameGroupInterpolationAnimIdx;
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-			//							m_BlendGroups[iCurGroupIdx].AnimInfo.pAnim->Reset_ChainInterpolation_Bones_SRT();
-
-			//							if (iCurGroupIdx == iTotal)
-			//								ChangeGroup[iInterpolationGroupIdx] = make_pair(Abgt::NONE, -1);
-
-			//							continue;
-			//						}
-			//					}
-
-			//					// 같은 그룹끼리의 보보보간 이상이 아니다
-
-			//					// 보간 목적지 인덱스 싹다 -1로 만든다.
-			//					for (_int iBlendGroupIdx = iLower; iBlendGroupIdx <= iTotal; ++iBlendGroupIdx)
-			//					{
-			//						// 원래 보간 중이던 보간 목적지 인덱스를 없앤다.
-			//						if (m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] != -1)
-			//							m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = -1;
-			//					}
-
-			//					m_BlendGroups[iCurGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
-
-			//					for (_int iBlendGroupIdx = iLower; iBlendGroupIdx <= iTotal; ++iBlendGroupIdx)
-			//					{
-			//						// 보보간 요청이 온 애니매이션 인덱스가 -1이 아닌 경우
-			//						if (ChangeGroup[iBlendGroupIdx].second != -1)
-			//						{
-			//							// 현재 그룹이 TOTAL인 경우
-			//							if (iCurGroupIdx == iTotal)
-			//							{
-			//								// TOTAL인데 다른 그룹으로의 보보간인 경우
-			//								if (iCurGroupIdx != iBlendGroupIdx)
-			//									m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//								else // TOTAL인데 같은 그룹으로의 보보간 인 경우
-			//									m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-
-			//								// 보보간 중이던 SRT 구성
-			//								m_BlendGroups[iCurGroupIdx].AnimInfo.pAnim->Reset_ChainInterpolation_Bones_SRT();
-			//							}
-			//							// 현재 그룹이 TOTAL이 아닌 경우
-			//							else
-			//							{
-			//								if (iBlendGroupIdx == iTotal)
-			//								{
-			//									// 2 6
-			//									if (iCurGroupIdx == iBlendGroupIdx)
-			//										m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//									else
-			//									{
-			//										m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//									}
-			//								}
-			//								else
-			//								{
-			//									if (iCurGroupIdx == iBlendGroupIdx)
-			//									{
-			//										m_BlendGroups[iCurGroupIdx].InterpolationInfo.InterpolationDstGroupIdices[iBlendGroupIdx] = ChangeGroup[iBlendGroupIdx].second;
-			//										ChangeGroup[iBlendGroupIdx] = make_pair(Abgt::NONE, -1);
-			//									}
-			//								}
-
-			//								// 보보간 중이던 SRT 구성
-			//								m_BlendGroups[iCurGroupIdx].AnimInfo.pAnim->Reset_ChainInterpolation_Bones_SRT();
-			//							}
-			//						}
-			//					}
-			//				}
-			//			}
-			//		}
-			//		else
-			//		{
-			//			assert(false, "보간, 보보간, 보보보간 이상 어느 경우에도 해당하지 않는다");
-			//			return;
-			//		}
-			//	}
-			//}
-		
+#endif
 #pragma endregion
-		
+
+
+			// 사용중인 그룹들 처리를 한다.
+			// 보간도 아니고 보보간이상인 경우도 아닌 그룹들은 조건에 맞는 경우 보간 처리를 한다.
+			Process_UsingGroups(iUsingCnt, iRequestCnt, UsingGroups, ChangeGroups);
+
+
+#pragma region "(디버그 콘솔창 출력) 애니매이션 수행중인 그룹들 변경 요청에 따라 변경된 결과 출력"
+
+#ifdef _DEBUG
+
+			for (_int i = low; i <= tot; ++i)
+			{
+				if (vecUsingGroups[i] == NON)
+					continue;
+
+				cout << endl;
+				cout << "-------------------- 사용중인 그룹 처리 결과 --------------------" << endl;
+				cout << endl;
+
+
+				_int iPrevUsingAnimIdx = UsingGroups[i].second;
+				string strPrevUsingAnimName = m_Animations[i]->Get_AnimName();
+				cout << AnimTypeStr[i] << '(' << i << ')' << " | 번 그룹은 " << strPrevUsingAnimName << '(' << iPrevUsingAnimIdx << ')' << " 애니매이션 수행중이였다." << endl;
+
+				cout << AnimTypeStr[i] << '(' << i << ')' << " | 번 그룹의 변경후 결과" << endl;
+
+				// 수행중이던 그룹의 변경전 출력
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+
+					cout << '[';
+
+					if (vecOriginUsingGroups[i][j] != NON)
+						cout << setw(maxWidth) << vecOriginUsingGroups[i][j];
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+
+				}
+				cout << endl;
+
+				// 수행후인 그룹의 변경후 보간결과 출력
+				for (_int j = low; j <= tot; ++j)
+				{
+					cout << setw(maxWidth * 2) << AnimTypeStr[j];
+
+					cout << '[';
+
+					if (Get_Dst_InterAnimIdx(Abgt(i), j) != NON)
+						cout << setw(maxWidth) << Get_Dst_InterAnimIdx(Abgt(i), j);
+					else
+						cout << setw(maxWidth) << 'X';
+
+					cout << ']' << " | ";
+				}
+				cout << endl;
+
+
+				cout << endl;
+				cout << "-------------------- 사용중인 그룹 처리 결과 --------------------" << endl;
+				cout << endl;
+
+
+			}
+
+#endif
+#pragma endregion
+
+		}
+
+#pragma region "(디버그 콘솔창 출력) Change_Anim 끝"
+#ifdef _DEBUG
+
+	cout << endl;
+	cout << endl;
+	cout << "====================================================" << m_iChangeAnimCnt << " 번째 " << "Change_Anim 처리 결과 ====================================================" << endl;
+	cout << endl;
+	cout << endl;
+
+#endif
+#pragma endregion
+
+	m_iChangeAnimCnt++;
+
 		return true;
 	}
 
@@ -1428,6 +1198,7 @@ private:
 	_float m_fCustumInterDis = 0.2f;
 	_float m_fCustumInterSP = 1.f;
 
+	_int m_iChangeAnimCnt = 1;
 // ----------------------------------------------------------------------
 
 
