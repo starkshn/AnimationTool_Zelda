@@ -2781,10 +2781,9 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 				Ready_ChainInterpolation(Abgt::TOTAL, Abgt(i), ChangeGroups[i].second, true);
 			}
 
-			// 이곳에서 EX-T 처리를 해도 되지만 CModel.h 의 Chagne_Anim UsingGroup == 0 일때 else문으로 EX-T를 처리함.
 			// EX-T
 			{
-				
+				Process_TotGroup_Exception(ChainInterpolationingGroups, ChangeGroups);
 			}
 		}
 	}

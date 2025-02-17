@@ -814,63 +814,70 @@ public:
 		else
 		{
 			// EX-T
-
-			_int iTotInterpoltaioningCnt = Get_Dst_Interpolationing_Cnt(Abgt::TOTAL);
-			
-			_int iFindDstInterpolationingGroupIdx = NON;
-			if (iTotInterpoltaioningCnt == 1 && iRequestCnt >= 2)
-			{
-
 #pragma region "변경 요청은 2개 이상이고, 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고 tot -> tot 로의 보간이 아닌 경우 예외 처리"
+
+
+			// 문제가 있어서 전체 주석 처리한다. EX-T의 경우 각 Process 함수들에서 처리하는게 버그가 더 없다.
+
+
+
 #ifdef _DEBUG
+			//_int iTotInterpoltaioningCnt = Get_Dst_Interpolationing_Cnt(Abgt::TOTAL);
+			//
+			//_int iFindDstInterpolationingGroupIdx = NON;
+			//if (iTotInterpoltaioningCnt == 1 && iRequestCnt >= 2)
+			//{
 
-				// EX-T (예외처리 250217)
-				// 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간이상이 아닌경우 상하 둘중하나는 애니매이션 재생이 되는 상황이 아니기 때문에 일순간 굳어져보이는 현상이 발생한다.
-				// 이에 대한 예외 처리를 하는 부분이다.
-				cout << endl;
-				cout << "사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간 이상 중이 아닌 경우 처리 중" << endl;
-				cout << endl;
 
+
+			//	// EX-T (예외처리 250217)
+			//	// 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간이상이 아닌경우 상하 둘중하나는 애니매이션 재생이 되는 상황이 아니기 때문에 일순간 굳어져보이는 현상이 발생한다.
+			//	// 이에 대한 예외 처리를 하는 부분이다.
+			//	cout << endl;
+			//	cout << "사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간 이상 중이 아닌 경우 처리 중" << endl;
+			//	cout << endl;
+
+
+
+			//	for (_int i = low; i <= tot; ++i)
+			//	{
+			//		_int iDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, i);
+			//		if (iDstInterpolationingAnimIdx != NON)
+			//		{
+			//			iFindDstInterpolationingGroupIdx = i;
+			//			break;
+			//		}
+			//	}
+
+			//	// NON도 아니고 tot도 아니라면 아래 상황은 EX : C 상황이다.
+			//	if (iFindDstInterpolationingGroupIdx != NON && iFindDstInterpolationingGroupIdx != tot)
+			//	{
+			//		// 그럼 iFindDstInterpolationingGroupIdx 를 제외한 그룹중에 어떤 그룹이 사용중이지 않는 그룹(ko 그룹)인지 찾는다 (tot를 제외하고)
+			//		for (_int i = low; i <= tot; ++i)
+			//		{
+			//			// iFindDstInterpolationingGroupIdx 와 같은 경우 건너뛴다.
+			//			if (i == iFindDstInterpolationingGroupIdx)
+			//				continue;
+
+			//			// i번 그룹이 사용중도 아니고 보간 이상도 아닌 경우 (ko 그룹을 찾았다.)
+			//			if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
+			//			{
+			//				// 그럼 이제 i번 그룹과 변경 요청이 온 것중에 같은 그룹이 있는지 본다.
+			//				if (ChangeGroups[i].second != NON)
+			//					Ready_ToPlay_Anim(Abgt(i), ChangeGroups[i].second);
+			//				// 없는 경우 강제로 0번 애니매이션 밀어 넣는다.
+			//				else
+			//				{
+			//					_int a = 10;
+			//					
+			//					Ready_ToPlay_Anim(Abgt(i), 0);
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
 #endif
 #pragma endregion
-
-				for (_int i = low; i <= tot; ++i)
-				{
-					_int iDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, i);
-					if (iDstInterpolationingAnimIdx != NON)
-					{
-						iFindDstInterpolationingGroupIdx = i;
-						break;
-					}
-				}
-
-				// NON도 아니고 tot도 아니라면 아래 상황은 EX : C 상황이다.
-				if (iFindDstInterpolationingGroupIdx != NON && iFindDstInterpolationingGroupIdx != tot)
-				{
-					// 그럼 iFindDstInterpolationingGroupIdx 를 제외한 그룹중에 어떤 그룹이 사용중이지 않는 그룹(ko 그룹)인지 찾는다 (tot를 제외하고)
-					for (_int i = low; i <= tot; ++i)
-					{
-						// iFindDstInterpolationingGroupIdx 와 같은 경우 건너뛴다.
-						if (i == iFindDstInterpolationingGroupIdx)
-							continue;
-
-						// i번 그룹이 사용중도 아니고 보간 이상도 아닌 경우 (ko 그룹을 찾았다.)
-						if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
-						{
-							// 그럼 이제 i번 그룹과 변경 요청이 온 것중에 같은 그룹이 있는지 본다.
-							if (ChangeGroups[i].second != NON)
-								Ready_ToPlay_Anim(Abgt(i), ChangeGroups[i].second);
-							// 없는 경우 강제로 0번 애니매이션 밀어 넣는다.
-							else
-							{
-								_int a = 10;
-								
-								Ready_ToPlay_Anim(Abgt(i), 0);
-							}
-						}
-					}
-				}
-			}
 		}
 
 
