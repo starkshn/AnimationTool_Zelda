@@ -3,6 +3,8 @@
 #include "Model.h"
 #include "Bone.h"
 
+#include <iostream>
+using namespace std;
 
 CAnimation::CAnimation()
 {
@@ -148,6 +150,22 @@ _bool CAnimation::Update_Inter_TransformationMatrices(CAnimation* pInterDstAnim,
 	{
 		// m_fCurrentTrackPosition = 0.f;
 		fInterTrackPos = 0.f; // 보간 현재 거리(시간) 초기화
+
+#pragma region "보간이 끝남, 정보 출력"
+
+#ifdef _DEBUG
+
+		string strDstAnimName = pInterDstAnim->Get_AnimName();
+
+		cout << "-----------------------------------------" << endl;
+		cout << "보간이 끝남" << endl;
+		cout << strDstAnimName << " 으로의 보간이 끝남" << endl;
+		cout << "-----------------------------------------" << endl;
+
+#endif
+
+#pragma endregion
+
 		return true;
 	}
 
@@ -261,15 +279,77 @@ _bool CAnimation::Update_TransformationMatrices(const vector<class CBone*>& Bone
 
 	_bool bEnd = false;
 
+#ifdef _DEBUG
+
+	static _float fAccAnimEnd = 0.f;
+	fAccAnimEnd += fTimeDelta;
+
+#endif
+
 	if (true == isLoop && m_fCurrentTrackPosition > m_fDuration) // 루프 애니매이션인 경우
 	{
 		m_fCurrentTrackPosition = 0.f;
 		bEnd = true;
+
+#pragma region "애니매이션 재생이 끝남"
+
+#ifdef _DEBUG
+
+		{
+			
+
+			if (bEnd)
+			{
+				if (fAccAnimEnd > 2.f)
+				{
+					fAccAnimEnd = 0.f;
+					
+					cout << endl;
+					cout << this->Get_AnimName() << " | 애니매이션 재생이 끝남" << endl;
+					cout << endl;
+				}
+			}
+		}
+
+
+#endif
+
+
+#pragma endregion
+
 	}
 	else if (m_fCurrentTrackPosition >= m_fDuration) // 루프 애니매이션이 아닌 경우 행렬 구성 X
 	{
 		m_fCurrentTrackPosition = m_fDuration;
 		bEnd = true;
+
+#pragma region "loop가 false(애니매이션을 멈춘다)이고 m_fDuration보다 큰 경우"
+
+#ifdef _DEBUG
+
+		static _float fAcc = 0.f;
+		fAcc += fTimeDelta;
+		if (fAcc >= 1.5f)
+		{
+			fAcc = 0.f;
+
+			cout << "*************************************************************************" << endl;
+			cout << endl;
+
+			cout << this->Get_AnimName() << endl;
+			cout << "루프가 꺼져있기 때문에(반복 재생을 한다는 옵션을 껏기 때문애) 애니매이션이 멈춰있습니다." << endl;
+			cout << "(하체에 대해 루프를 false로 설정해놓은 경우 skl_root 뼈가 포함되어 있어서 애니매이션 이동, 회전등이 상쇄 됩니다. 굳어 있는 것 처럼 보임)" << endl;
+
+			cout << endl;
+			cout << "*************************************************************************" << endl;
+
+		}
+
+#endif
+		
+
+#pragma endregion
+
 		return bEnd;
 	}
 	

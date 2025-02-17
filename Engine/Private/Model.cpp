@@ -842,6 +842,20 @@ void CModel::Finalize_Interpolation_When_NotTotalTo(Abgt eSrcInterpolationGroup,
 // Total -> Total의 보간의 끝인 경우 호출되는 함수
 void CModel::Finalize_Interpolation_When_TotalToTotal(Abgt eSrcInterpolationGroup, Abgt eDstStartAnimGroup)
 {
+#pragma region "Finalize_Interpolation_When_TotalToTotal"
+
+#ifdef _DEBUG
+
+	cout << AnimTypeStr[_int(eSrcInterpolationGroup)] << " 에서 " << AnimTypeStr[_int(eDstStartAnimGroup)] << " 으로의 보간이 끝났습니다." << endl;
+
+#endif
+
+#pragma endregion
+
+
+
+
+
 	if (eSrcInterpolationGroup != Abgt::TOTAL && eDstStartAnimGroup != Abgt::TOTAL)
 	{
 		assert(false, "Total to Total의 보간이 끝이 아닙니다");
@@ -1161,6 +1175,28 @@ void CModel::Ready_ToPlay_Anim(Abgt eGroup, const ANIM_INFO& SrcAnimInfo)
 	Reset_InterpolationDstIndices(Abgt(iGroupIdx));
 }
 
+void CModel::Ready_ToPlay_Anim(Abgt eGroup, const _int iAnimIdx)
+{
+	const _int iGroupIdx = (_int)eGroup;
+
+	m_BlendGroups[iGroupIdx].AnimInfo.bUse = true;
+	m_BlendGroups[iGroupIdx].AnimInfo.bInterpolationing = false;
+	if (m_BlendGroups[iGroupIdx].AnimInfo.bEnd)
+		m_BlendGroups[iGroupIdx].AnimInfo.bEnd = false;
+
+
+	m_BlendGroups[iGroupIdx].AnimInfo.pAnim = m_Animations[iAnimIdx];
+	m_BlendGroups[iGroupIdx].AnimInfo.iAnimIdx = iAnimIdx;
+	m_BlendGroups[iGroupIdx].AnimInfo.strAnimName = m_Animations[iAnimIdx]->Get_AnimName();
+
+	if (m_BlendGroups[iGroupIdx].InterpolationInfo.bChainInterpolation)
+		m_BlendGroups[iGroupIdx].InterpolationInfo.bChainInterpolation = false;
+
+	m_BlendGroups[iGroupIdx].InterpolationInfo.fInterpolationCurTrackPos = 0.f;
+
+	Reset_InterpolationDstIndices(Abgt(iGroupIdx));
+}
+
 void CModel::Ready_ChainInterpolation(Abgt eSrcChainInterpolationGroup, Abgt eDstChainInterpolationGroup, _int iChainInterpolationDstAnimIdx, _bool Setup_BoneSRT)
 {
 	const _int iSrcGroupIdx = (_int)eSrcChainInterpolationGroup;
@@ -1285,6 +1321,7 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 				iNotTotalGroupIdx = i;
 		}
 
+		// 사용중인 그룹이 tot인경우
 		if (bTotal)
 		{
 			_bool bIsRequestGroupTotal = false;
@@ -1294,7 +1331,7 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 					bIsRequestGroupTotal = true;
 			}
 
-			// 전체 -> 전체
+			// 전체 -> 전체 (요청 그룹이 1개이고(tot로의 변경 요청일 때) 
 			if (iRequestCnt == 1 && bIsRequestGroupTotal)
 			{
 				_int iRequestChangeAnimIdx = ChangeGroups[iTotal].second;
@@ -1308,7 +1345,7 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 				Ready_Interpolation(Abgt::TOTAL, Abgt::TOTAL, iRequestChangeAnimIdx);
 			}
 			// 전체 -> 상하(그 이상)
-			else if (!bIsRequestGroupTotal)
+			else if (iRequestCnt >= 2 && !bIsRequestGroupTotal)
 			{
 				_int iCurUsingGroupAnimIdx = UsingGroups[iTotal].second;
 
@@ -1332,7 +1369,7 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 				}
 			}
 		}
-		// 사용중인 그룹이 total이 아닌경우 1대1 대응 관계이다.
+		// 사용중인 그룹이 total이 아닌경우 상, 하 등 중에서 하나의 그룹이다.
 		else
 		{
 			if (iNotTotalGroupIdx == NON)
@@ -1350,8 +1387,7 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 
 				Ready_Interpolation(Abgt(iNotTotalGroupIdx), Abgt(iNotTotalGroupIdx), iReAnimIdx);
 			}
-			// tot가 아닌 곳에서 tot로의 보간 요청인 경우
-			// 보간 중인 것들은 다시 tot로의 보보간을 요청하고 보보간 이상인 것들은 tot로의 보보간 이상을 요청한다.
+			// tot로의 보간 요청인 경우
 			else
 			{
 				_int iReTotAnimIdx = ChangeGroups[iTotal].second;
@@ -1360,22 +1396,14 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 				{
 					if (Is_Use_Condition(m_BlendGroups[i]))
 					{
-						Ready_Interpolation(Abgt(i), Abgt::TOTAL, iReTotAnimIdx);
-						continue;
+						_int iCurUsingAnimIdx = UsingGroups[i].second;
+
+						if (iCurUsingAnimIdx != iReTotAnimIdx)
+						{
+							Ready_Interpolation(Abgt(i), Abgt::TOTAL, iReTotAnimIdx);
+							continue;
+						}
 					}
-
-					//if (Is_Interpolation_Condition(m_BlendGroups[i]))
-					//{
-					//	Reset_InterpolationDstIndices(Abgt(i));
-					//	Ready_ChainInterpolation(Abgt(i), Abgt::TOTAL, iReTotAnimIdx);
-					//	continue;
-					//}
-
-					//if (Is_ChainInterpolation_Condition(m_BlendGroups[i]))
-					//{
-					//	Reset_InterpolationDstIndices(Abgt(i));
-					//	Ready_ChainInterpolation(Abgt(i), Abgt::TOTAL, iReTotAnimIdx);
-					//}
 				}
 			}
 		}
@@ -1771,7 +1799,7 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 						}
 
 						// =====================================================================================================================================================
-						// EX : A (예외처리, 250215)
+						// EX-T (예외처리, 250215)
 						{
 							// A의 예외 처리
 							// 모든 그룹을 확인해본다. A -> B -> BC(상하)의 경우 
@@ -1781,32 +1809,35 @@ _bool CModel::Process_InterpolationingGroups(_int iInterpolationingGroupCnt, _in
 							// iUsingGroupCnt가 0개이고 tot에서 재생하던 애니매이션과 변경 요청이 온 애니매이션이 같은 경우 해당 그룹에 애니매이션 정보를 넘겨준다.
 							// ex) A -> B, BC(상하 요청) 의 경우 1. [전체(B) -> 하체(C) 보간을 수행] 2. [상체(없음) -> 상체(B)를 전달받아 그대로 재생] 
 
-							_int iUsingGroupCnt = 0;
-							for (_int i = low; i < tot; ++i)
-							{
-								if (Is_Use_Condition(m_BlendGroups[i]))
-									++iUsingGroupCnt;
-							}
+							Process_TotGroup_Exception(iCurDstInterpolationingAnimIdx, ChangeGroups);
 
-							// 사용중인 그룹이 0개 이면 확인해서 어떤 그룹 재생 해주어야할지 결정해준다.
-							if (!iUsingGroupCnt)
-							{
-								for (_int i = low; i < tot; ++i)
-								{
-									if (ChangeGroups[i].second == NON) // i번 요청 그룹이 NON이면 건너뛴다.
-										continue;
 
-									_int iReGroupIdx = i;
-									_int iReAnimIdx = ChangeGroups[i].second;
+							//_int iUsingGroupCnt = 0;
+							//for (_int i = low; i < tot; ++i)
+							//{
+							//	if (Is_Use_Condition(m_BlendGroups[i]))
+							//		++iUsingGroupCnt;
+							//}
 
-									// i번 요청 그룹의 애니매이션이 현재 보간중인 애니매이션과 같다면
-									// A -> B | BC 경우 상체에 대한 부분을 처리 해준다.
-									if (iCurDstInterpolationingAnimIdx == iReAnimIdx) 
-									{
-										Ready_ToPlay_Anim(Abgt(iReGroupIdx), m_BlendGroups[tot].AnimInfo);
-									}
-								}
-							}
+							//// 사용중인 그룹이 0개 이면 확인해서 어떤 그룹 재생 해주어야할지 결정해준다.
+							//if (!iUsingGroupCnt)
+							//{
+							//	for (_int i = low; i < tot; ++i)
+							//	{
+							//		if (ChangeGroups[i].second == NON) // i번 요청 그룹이 NON이면 건너뛴다.
+							//			continue;
+
+							//		_int iReGroupIdx = i;
+							//		_int iReAnimIdx = ChangeGroups[i].second;
+
+							//		// i번 요청 그룹의 애니매이션이 현재 보간중인 애니매이션과 같다면
+							//		// A -> B | BC 경우 상체에 대한 부분을 처리 해준다.
+							//		if (iCurDstInterpolationingAnimIdx == iReAnimIdx) 
+							//		{
+							//			Ready_ToPlay_Anim(Abgt(iReGroupIdx), m_BlendGroups[tot].AnimInfo);
+							//		}
+							//	}
+							//}
 						}
 						// =====================================================================================================================================================
 
@@ -2749,6 +2780,12 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 
 				Ready_ChainInterpolation(Abgt::TOTAL, Abgt(i), ChangeGroups[i].second, true);
 			}
+
+			// 이곳에서 EX-T 처리를 해도 되지만 CModel.h 의 Chagne_Anim UsingGroup == 0 일때 else문으로 EX-T를 처리함.
+			// EX-T
+			{
+				
+			}
 		}
 	}
 	// tot 그룹이 보보간 이상을 수행중인데, 변경 요청이 2개 이상인 경우
@@ -2814,11 +2851,13 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 		// tot 그룹이 보보간 이상 수행중인데 목적지 그룹이 2개 이상이고, 변경 요청이 2개 이상이다.
 		else
 		{
+			_int iCurDstInterpolationAnimIdx = NON;
+
 			// tot 그룹이 어떤 그룹들로 보보간 이상 수행중인지 그룹들을 찾는다.
 			for (_int i = low; i < tot; ++i)
 			{
 				_int iCurDstInterpolationGroupIdx = i;
-				_int iCurDstInterpolationAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, iCurDstInterpolationGroupIdx);
+				iCurDstInterpolationAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, iCurDstInterpolationGroupIdx);
 				if (iCurDstInterpolationAnimIdx == NON)
 					continue;
 
@@ -2831,6 +2870,72 @@ void CModel::Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolatio
 					continue;
 
 				Ready_ChainInterpolation(Abgt::TOTAL, Abgt(iCurDstInterpolationGroupIdx), iReAnimIdx, true);
+			}
+
+			// EX-T (예외 처리, 250216)
+			{
+				Process_TotGroup_Exception(iCurDstInterpolationAnimIdx, ChangeGroups);
+			}
+
+		}
+	}
+}
+
+void CModel::Process_TotGroup_Exception(_int iCurTotInterpolationingAnimIdx, vector<pair<Abgt, _int>>& ChangeGroups)
+{
+	_int iUsingGroupCnt = 0;
+	for (_int i = low; i < tot; ++i)
+	{
+		if (Is_Use_Condition(m_BlendGroups[i]))
+			++iUsingGroupCnt;
+	}
+
+	// 사용중인 그룹이 0개 이면 확인해서 어떤 그룹 재생 해주어야할지 결정해준다.
+	if (!iUsingGroupCnt)
+	{
+		for (_int i = low; i < tot; ++i)
+		{
+			if (ChangeGroups[i].second == NON) // i번 요청 그룹이 NON이면 건너뛴다.
+				continue;
+
+			_int iReGroupIdx = i;
+			_int iReAnimIdx = ChangeGroups[i].second;
+
+			// i번 요청 그룹의 애니매이션이 현재 보간중인 애니매이션과 같다면
+			// A -> ... -> B | BC 경우 상체에 대한 부분을 처리 해준다.
+			if (iCurTotInterpolationingAnimIdx == iReAnimIdx)
+			{
+				Ready_ToPlay_Anim(Abgt(iReGroupIdx), iCurTotInterpolationingAnimIdx);
+			}
+		}
+	}
+}
+
+void CModel::Process_TotGroup_Exception(vector<pair<Abgt, _int>>& InterGroups, vector<pair<Abgt, _int>>& ChangeGroups)
+{
+	_int iUsingGroupCnt = 0;
+	for (_int i = low; i < tot; ++i)
+	{
+		if (Is_Use_Condition(m_BlendGroups[i]))
+			++iUsingGroupCnt;
+	}
+
+	// 사용중인 그룹이 0개 이면 확인해서 어떤 그룹 재생 해주어야할지 결정해준다.
+	if (!iUsingGroupCnt)
+	{
+		for (_int i = low; i < tot; ++i)
+		{
+			if (ChangeGroups[i].second == NON) // i번 요청 그룹이 NON이면 건너뛴다.
+				continue;
+
+			_int iReGroupIdx = i;
+			_int iReAnimIdx = ChangeGroups[i].second;
+
+			// i번 요청 그룹의 애니매이션이 현재 보간중인 애니매이션과 같다면
+			// A -> B | BC 경우 상체에 대한 부분을 처리 해준다.
+			if (InterGroups[tot].second == iReAnimIdx)
+			{
+				Ready_ToPlay_Anim(Abgt(iReGroupIdx), m_BlendGroups[tot].AnimInfo);
 			}
 		}
 	}

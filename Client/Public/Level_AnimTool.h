@@ -635,7 +635,7 @@ private:
 	deque<string>							m_SelectedShowBonesNames;
 	map<string, pair<string, CAT_Square*>>	m_SelectedShowBoneSquare; // 뼈이름, <오브젝트 이름, 실 오브젝트*>
 
-	const _char* m_BlendBoneTypes[(_int)ANIM_BLEND_GROUP_TYPE::BLEND_END] =		{ "None", "LowerBody", "UpperBody", "ArmLeft", "ArmRight", "Head", "Total"};
+	const _char* m_BlendBoneTypes[tot + 1] =		{ "None", "LowerBody", "UpperBody", "ArmLeft", "ArmRight", "Head", "Total"};
 
 	// 블렌딩 할 뼈 원본을 담당
 	deque<pair<string, _int>>				m_BlendBones; // 뼈 이름, 뼈 인덱스

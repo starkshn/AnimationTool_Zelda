@@ -4570,7 +4570,7 @@ string CLevel_AnimTool::Show_BoneInfo_Recur_TreeNode(BONE_XML& Bone)
 
             if (ImGui::BeginCombo("Blend Bone Combo", pCurBoneComboVal, 0))
             {
-                for (_int n = (_int)ANIM_BLEND_GROUP_TYPE::LOWER_BODY; n < IM_ARRAYSIZE(m_BlendBoneTypes); n++)
+                for (_int n = 0; n < IM_ARRAYSIZE(m_BlendBoneTypes); n++)
                 {
                     const _bool is_selected = (iCurBoneBlendBoneTypeIdx == n);
                     if (ImGui::Selectable(m_BlendBoneTypes[n], is_selected))

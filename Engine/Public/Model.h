@@ -8,6 +8,8 @@
 #include <array>
 #include <tinyxml2.h>
 
+#include <iostream>
+using namespace std;
 
 namespace xml = tinyxml2;
 BEGIN(Engine)
@@ -16,6 +18,11 @@ class CBone;
 
 class ENGINE_DLL CModel final : public CComponent
 {
+#ifdef _DEBUG
+private:
+	constexpr static array<const _char*, tot + 1> AnimTypeStr = { "NON", "LOWER_BODY", "UPPER_BODY", "ARM_LEFT", "ARM_RIGHT", "HEAD", "TOTAL" };
+#endif
+
 
 public:
 	typedef struct BlendGroupDefaultInfo
@@ -349,11 +356,6 @@ public:
 				return false;
 			}
 		}
-
-#ifdef _DEBUG
-		const static array<const _char*, tot + 1> AnimTypeStr = { "NON", "LOWER_BODY", "UPPER_BODY", "ARM_LEFT", "ARM_RIGHT", "HEAD", "TOTAL" };
-#endif
-
 	
 #pragma region "(디버그 콘솔창 출력) Change_Anim 시작"
 
@@ -380,7 +382,7 @@ public:
 			if (ChangeGroups[i].second == NON)
 				continue;
 
-			cout << setw(30) << "[ Anim Group | " << AnimTypeStr[i] << " ] " << " [ Anim Idx | " << ChangeGroups[i].second << " ] " << " [ Anim Name | " << m_Animations[i]->Get_AnimName() << " ] " << endl;
+			cout << setw(30) << "[ Anim Group | " << AnimTypeStr[i] << " ] " << " [ Anim Idx | " << ChangeGroups[i].second << " ] " << " [ Anim Name | " << m_Animations[ChangeGroups[i].second]->Get_AnimName() << " ] " << endl;
 		}
 
 		cout << endl;
@@ -388,7 +390,6 @@ public:
 		cout << endl;
 
 #pragma endregion
-
 
 
 		// 보보간 이상에 대한 철;
@@ -437,7 +438,18 @@ public:
 #pragma endregion
 
 			// 보보간 이상 처리
-			Process_ChainInterpolationGroups(iChainInterpolationingCnt, iRequestCnt, ChainInterpolationingGroups, ChangeGroups);
+			if (!Process_ChainInterpolationGroups(iChainInterpolationingCnt, iRequestCnt, ChainInterpolationingGroups, ChangeGroups))
+			{
+	
+#ifdef _DEBUG
+
+				cout << endl;
+				cout << "Process_ChainInterpolationGroups 예외 발생 (false 반환 합니다)" << endl;
+				cout << endl;
+
+#endif
+				return false;
+			}
 
 #pragma region "(디버그 콘솔창 출력) 보보간 이상인 경우에 대해 변경 요청에 따라 변경된 결과 출력"
 
@@ -540,7 +552,18 @@ public:
 #pragma endregion
 
 			// Process_UsingGroups에서 처리 되어서 보간 중인 그룹들에 대해서 조건에 맞는 경우 보보간 처리를 한다.
-			Process_InterpolationingGroups(iInterpolationingCnt, iRequestCnt, InterpolationingGroups, ChangeGroups);
+			if (!Process_InterpolationingGroups(iInterpolationingCnt, iRequestCnt, InterpolationingGroups, ChangeGroups))
+			{
+
+#ifdef _DEBUG
+
+				cout << endl;
+				cout << "Process_InterpolationingGroups 예외 발생 (false 반환 합니다)" << endl;
+				cout << endl;
+
+#endif
+				return false;
+			}
 
 #pragma region "(디버그 콘솔창 출력) 보간 이상인 경우에 대해 변경 요청에 따라 변경된 결과 출력"
 
@@ -709,7 +732,18 @@ public:
 
 			// 사용중인 그룹들 처리를 한다.
 			// 보간도 아니고 보보간이상인 경우도 아닌 그룹들은 조건에 맞는 경우 보간 처리를 한다.
-			Process_UsingGroups(iUsingCnt, iRequestCnt, UsingGroups, ChangeGroups);
+			if (!Process_UsingGroups(iUsingCnt, iRequestCnt, UsingGroups, ChangeGroups))
+			{
+
+#ifdef _DEBUG
+
+				cout << endl;
+				cout << "Process_UsingGroups 예외 발생 (false 반환 합니다)" << endl;
+				cout << endl;
+
+#endif
+				return false;
+			}
 
 
 #pragma region "(디버그 콘솔창 출력) 애니매이션 수행중인 그룹들 변경 요청에 따라 변경된 결과 출력"
@@ -777,6 +811,68 @@ public:
 #pragma endregion
 
 		}
+		else
+		{
+			// EX-T
+
+			_int iTotInterpoltaioningCnt = Get_Dst_Interpolationing_Cnt(Abgt::TOTAL);
+			
+			_int iFindDstInterpolationingGroupIdx = NON;
+			if (iTotInterpoltaioningCnt == 1 && iRequestCnt >= 2)
+			{
+
+#pragma region "변경 요청은 2개 이상이고, 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고 tot -> tot 로의 보간이 아닌 경우 예외 처리"
+#ifdef _DEBUG
+
+				// EX-T (예외처리 250217)
+				// 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간이상이 아닌경우 상하 둘중하나는 애니매이션 재생이 되는 상황이 아니기 때문에 일순간 굳어져보이는 현상이 발생한다.
+				// 이에 대한 예외 처리를 하는 부분이다.
+				cout << endl;
+				cout << "사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간 이상 중이 아닌 경우 처리 중" << endl;
+				cout << endl;
+
+#endif
+#pragma endregion
+
+				for (_int i = low; i <= tot; ++i)
+				{
+					_int iDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, i);
+					if (iDstInterpolationingAnimIdx != NON)
+					{
+						iFindDstInterpolationingGroupIdx = i;
+						break;
+					}
+				}
+
+				// NON도 아니고 tot도 아니라면 아래 상황은 EX : C 상황이다.
+				if (iFindDstInterpolationingGroupIdx != NON && iFindDstInterpolationingGroupIdx != tot)
+				{
+					// 그럼 iFindDstInterpolationingGroupIdx 를 제외한 그룹중에 어떤 그룹이 사용중이지 않는 그룹(ko 그룹)인지 찾는다 (tot를 제외하고)
+					for (_int i = low; i <= tot; ++i)
+					{
+						// iFindDstInterpolationingGroupIdx 와 같은 경우 건너뛴다.
+						if (i == iFindDstInterpolationingGroupIdx)
+							continue;
+
+						// i번 그룹이 사용중도 아니고 보간 이상도 아닌 경우 (ko 그룹을 찾았다.)
+						if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
+						{
+							// 그럼 이제 i번 그룹과 변경 요청이 온 것중에 같은 그룹이 있는지 본다.
+							if (ChangeGroups[i].second != NON)
+								Ready_ToPlay_Anim(Abgt(i), ChangeGroups[i].second);
+							// 없는 경우 강제로 0번 애니매이션 밀어 넣는다.
+							else
+							{
+								_int a = 10;
+								
+								Ready_ToPlay_Anim(Abgt(i), 0);
+							}
+						}
+					}
+				}
+			}
+		}
+
 
 #pragma region "(디버그 콘솔창 출력) Change_Anim 끝"
 #ifdef _DEBUG
@@ -790,7 +886,12 @@ public:
 #endif
 #pragma endregion
 
+
+#ifdef _DEBUG
+
 	m_iChangeAnimCnt++;
+
+#endif
 
 		return true;
 	}
@@ -813,6 +914,7 @@ private:
 	void Ready_Interpolation(Abgt eSrcInterpolationGroup, Abgt eDstInterpolationGroup, _int iInterpolationDstAnimIdx); // 250210
 	void Ready_Interpolation_TotalToTotal(_int iInterDstAnimIdx);	// 250210
 	void Ready_ToPlay_Anim(Abgt eGroup, const ANIM_INFO& SrcAnimInfo); // 250211
+	void Ready_ToPlay_Anim(Abgt eGroup, const _int iAnimIdx); // 250216
 	void Ready_ChainInterpolation(Abgt eSrcChainInterpolationGroup, Abgt eDstChainInterpolationGroup, _int iChainInterpolationDstAnimIdx, _bool Setup_BoneSRT = false); // 250211
 	
 	void Cal_Interpolation_KeyFrame(_int iInterpolationDstAnimIdx, INTERPOLATION_INFO& InterpolationSrcInfo); // 250210
@@ -856,6 +958,10 @@ private:
 
 	void Process_When_TotGroup_ChainInterpolationing(_int iChainInterpolationingGroupCnt, _int iRequestCnt, vector<pair<Abgt, _int>>& ChainInterpolationingGroups, vector<pair<Abgt, _int>>& ChangeGroups); // 250214
 
+	// 250216
+	void Process_TotGroup_Exception(_int iCurTotInterpolationingAnimIdx, vector<pair<Abgt, _int>>& ChangeGroups);
+	void Process_TotGroup_Exception(vector<pair<Abgt, _int>>& InterpolationGroups, vector<pair<Abgt, _int>>& ChangeGroups);
+
 	_int Get_Dst_InterAnimIdx(Abgt eSrc, Abgti iDst) // 250213
 	{
 		if (iDst < low || iDst > tot)
@@ -887,6 +993,19 @@ public:
 	void Set_BlendGroup_Loop(Abgt eBlendGroup, _bool bLoop)
 	{
 		m_BlendGroups[_int(eBlendGroup)].AnimInfo.bIsLoop = bLoop;
+
+#pragma region "Set_BlendGroup_Loop"
+
+#ifdef _DEBUG
+
+		cout << endl;
+		cout << AnimTypeStr[_int(eBlendGroup)] << "그룹에 대해서 루프를 [" << bLoop << "] 로 설정했습니다." << endl;
+		cout << endl;
+
+#endif
+
+#pragma endregion
+
 	}
 
 	// 250201
@@ -1198,7 +1317,11 @@ private:
 	_float m_fCustumInterDis = 0.2f;
 	_float m_fCustumInterSP = 1.f;
 
+#ifdef _DEBUG
+
 	_int m_iChangeAnimCnt = 1;
+
+#endif
 // ----------------------------------------------------------------------
 
 
