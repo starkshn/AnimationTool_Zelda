@@ -599,6 +599,8 @@ _bool CModel::Update_Interpolation_Animation(_float fTimeDelta, _bool bPlayer)
 		}
 	}
 
+	Finalize_Interpolation_Exception();
+
 	return false;
 }
 
@@ -1099,6 +1101,43 @@ void CModel::Reset_InterpolationDstIndices(Abgt eGroup)
 		m_BlendGroups[_int(eGroup)].InterpolationInfo.InterpolationDstGroupIdices[i] = -1;
 }
 
+void CModel::Finalize_Interpolation_Exception()
+{
+	_int iUseCnt = 0;
+	// 모든 보간이 끝났는데 사용중인 애니매이션이 하나도 없는 경우
+	for (_int i = low; i <= tot; ++i)
+	{
+		if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
+			++iUseCnt;
+	}
+
+	// 사용중인 그룹이 하나도 없는 경우
+	if (!iUseCnt)
+	{
+
+#ifdef _DEBUG
+
+		cout << endl;
+		cout << "iUseCnt : " << iUseCnt << " 보간이 끝났는데 사용중인 그룹이 하나도 없습니다. 캐쉬된 애니매이션 인덱스를 사용합니다." << endl;
+		cout << endl;
+
+		Use_Cache_AnimIdx();
+
+#endif
+
+	}
+}
+
+void CModel::Use_Cache_AnimIdx()
+{
+	for (_int i = 0; i < m_Cache_AnimIdx[tot].size(); ++i)
+	{
+		Ready_ToPlay_Anim(Abgt::TOTAL, m_Cache_AnimIdx[tot].front());
+		m_Cache_AnimIdx[tot].clear();
+		break;
+	}
+}
+
 void CModel::Ready_Interpolation(Abgt eSrcInterpolationGroup, Abgt eDstInterpolationGroup, _int iInterpolationDstAnimIdx)
 {
 	const _int iSrcGroupIdx = _int(eSrcInterpolationGroup);
@@ -1343,6 +1382,9 @@ _bool CModel::Process_UsingGroups(_int iUsingCnt, _int iRequestCnt, vector<pair<
 
 				// 같은 경우가 아니기 때문에 보간한다.
 				Ready_Interpolation(Abgt::TOTAL, Abgt::TOTAL, iRequestChangeAnimIdx);
+
+				// 250217
+				m_iFinalize_ResetExceptionAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, tot);
 			}
 			// 전체 -> 상하(그 이상)
 			else if (iRequestCnt >= 2 && !bIsRequestGroupTotal)
@@ -2936,6 +2978,23 @@ void CModel::Process_TotGroup_Exception(vector<pair<Abgt, _int>>& InterGroups, v
 			{
 				Ready_ToPlay_Anim(Abgt(iReGroupIdx), m_BlendGroups[tot].AnimInfo);
 			}
+		}
+	}
+}
+
+void CModel::Cache_Tot_AnimIdx()
+{
+	if (m_Cache_AnimIdx[tot].size() >= 3)
+		m_Cache_AnimIdx[tot].clear();
+	
+	if (m_BlendGroups[tot].AnimInfo.bUse)
+	{
+		if (!m_Cache_AnimIdx[tot].empty())
+			m_Cache_AnimIdx[tot].push_back(m_BlendGroups[tot].AnimInfo.iAnimIdx);
+		else
+		{
+			if (m_Cache_AnimIdx[tot].back() != m_BlendGroups[tot].AnimInfo.iAnimIdx)
+				m_Cache_AnimIdx[tot].push_back(m_BlendGroups[tot].AnimInfo.iAnimIdx);
 		}
 	}
 }

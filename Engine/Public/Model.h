@@ -709,6 +709,8 @@ public:
 
 		if (iUsingCnt)
 		{
+			Cache_Tot_AnimIdx(); // 250217
+
 
 #pragma region "(디버그 콘솔창 출력) 애니매이션 수행중인 그룹들 변경 요청전 데이터 임시 보관 로직"
 #ifdef _DEBUG 
@@ -822,60 +824,69 @@ public:
 
 
 #ifdef _DEBUG
-			//_int iTotInterpoltaioningCnt = Get_Dst_Interpolationing_Cnt(Abgt::TOTAL);
-			//
-			//_int iFindDstInterpolationingGroupIdx = NON;
-			//if (iTotInterpoltaioningCnt == 1 && iRequestCnt >= 2)
-			//{
+
+			_int iRealUsingCnt = 0;
+			for (_int i = low; i <= tot; ++i)
+			{
+				if (Is_Use_Condition(m_BlendGroups[i]))
+					++iRealUsingCnt;
+			}
+
+			if (!iRealUsingCnt)
+			{
+				_int iTotInterpoltaioningCnt = Get_Dst_Interpolationing_Cnt(Abgt::TOTAL);
+
+				_int iFindDstInterpolationingGroupIdx = NON;
+				if (iTotInterpoltaioningCnt == 1 && iRequestCnt >= 2)
+				{
+					// EX-T (예외처리 250217)
+					// 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간이상이 아닌경우 상하 둘중하나는 애니매이션 재생이 되는 상황이 아니기 때문에 일순간 굳어져보이는 현상이 발생한다.
+					// 이에 대한 예외 처리를 하는 부분이다.
+					cout << endl;
+					cout << "사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간 이상 중이 아닌 경우 처리 중" << endl;
+					cout << endl;
+
+					for (_int i = low; i <= tot; ++i)
+					{
+						_int iDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, i);
+						if (iDstInterpolationingAnimIdx != NON)
+						{
+							iFindDstInterpolationingGroupIdx = i;
+							break;
+						}
+					}
+
+					// NON도 아니고 tot도 아니라면 아래 상황은 EX : C 상황이다.
+					if (iFindDstInterpolationingGroupIdx != NON && iFindDstInterpolationingGroupIdx != tot)
+					{
+						// 그럼 iFindDstInterpolationingGroupIdx 를 제외한 그룹중에 어떤 그룹이 사용중이지 않는 그룹(ko 그룹)인지 찾는다 (tot를 제외하고)
+						for (_int i = low; i <= tot; ++i)
+						{
+							// iFindDstInterpolationingGroupIdx 와 같은 경우 건너뛴다.
+							if (i == iFindDstInterpolationingGroupIdx)
+								continue;
+
+							// i번 그룹이 사용중도 아니고 보간 이상도 아닌 경우 (ko 그룹을 찾았다.)
+							if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
+							{
+								// 그럼 이제 i번 그룹과 변경 요청이 온 것중에 같은 그룹이 있는지 본다.
+								if (ChangeGroups[i].second != NON)
+									Ready_ToPlay_Anim(Abgt(i), ChangeGroups[i].second);
+								// 없는 경우 강제로 0번 애니매이션 밀어 넣는다.
+								else
+								{
+									_int a = 10;
+
+									Ready_ToPlay_Anim(Abgt(i), 0);
+								}
+							}
+						}
+					}
+				}
+			}
 
 
 
-			//	// EX-T (예외처리 250217)
-			//	// 사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간이상이 아닌경우 상하 둘중하나는 애니매이션 재생이 되는 상황이 아니기 때문에 일순간 굳어져보이는 현상이 발생한다.
-			//	// 이에 대한 예외 처리를 하는 부분이다.
-			//	cout << endl;
-			//	cout << "사용중인 그룹이 하나도 없고, tot 그룹의 보간 개수가 1개이고, tot -> tot로의 보간 이상 중이 아닌 경우 처리 중" << endl;
-			//	cout << endl;
-
-
-
-			//	for (_int i = low; i <= tot; ++i)
-			//	{
-			//		_int iDstInterpolationingAnimIdx = Get_Dst_InterAnimIdx(Abgt::TOTAL, i);
-			//		if (iDstInterpolationingAnimIdx != NON)
-			//		{
-			//			iFindDstInterpolationingGroupIdx = i;
-			//			break;
-			//		}
-			//	}
-
-			//	// NON도 아니고 tot도 아니라면 아래 상황은 EX : C 상황이다.
-			//	if (iFindDstInterpolationingGroupIdx != NON && iFindDstInterpolationingGroupIdx != tot)
-			//	{
-			//		// 그럼 iFindDstInterpolationingGroupIdx 를 제외한 그룹중에 어떤 그룹이 사용중이지 않는 그룹(ko 그룹)인지 찾는다 (tot를 제외하고)
-			//		for (_int i = low; i <= tot; ++i)
-			//		{
-			//			// iFindDstInterpolationingGroupIdx 와 같은 경우 건너뛴다.
-			//			if (i == iFindDstInterpolationingGroupIdx)
-			//				continue;
-
-			//			// i번 그룹이 사용중도 아니고 보간 이상도 아닌 경우 (ko 그룹을 찾았다.)
-			//			if (!m_BlendGroups[i].AnimInfo.bUse && !m_BlendGroups[i].AnimInfo.bInterpolationing)
-			//			{
-			//				// 그럼 이제 i번 그룹과 변경 요청이 온 것중에 같은 그룹이 있는지 본다.
-			//				if (ChangeGroups[i].second != NON)
-			//					Ready_ToPlay_Anim(Abgt(i), ChangeGroups[i].second);
-			//				// 없는 경우 강제로 0번 애니매이션 밀어 넣는다.
-			//				else
-			//				{
-			//					_int a = 10;
-			//					
-			//					Ready_ToPlay_Anim(Abgt(i), 0);
-			//				}
-			//			}
-			//		}
-			//	}
-			//}
 #endif
 #pragma endregion
 		}
@@ -917,6 +928,10 @@ private:
 	void Finalize_Interpolation_When_TotalToNotTotal(Abgt eSrcInterpolationGroup, Abgt eDstStartAnimGroup);	// 250208
 
 	void Reset_InterpolationDstIndices(Abgt eGroup); // 250209
+
+	void Finalize_Interpolation_Exception(); // 250217
+	void Use_Cache_AnimIdx(); // 250217
+
 
 	void Ready_Interpolation(Abgt eSrcInterpolationGroup, Abgt eDstInterpolationGroup, _int iInterpolationDstAnimIdx); // 250210
 	void Ready_Interpolation_TotalToTotal(_int iInterDstAnimIdx);	// 250210
@@ -968,6 +983,9 @@ private:
 	// 250216
 	void Process_TotGroup_Exception(_int iCurTotInterpolationingAnimIdx, vector<pair<Abgt, _int>>& ChangeGroups);
 	void Process_TotGroup_Exception(vector<pair<Abgt, _int>>& InterpolationGroups, vector<pair<Abgt, _int>>& ChangeGroups);
+
+	// 250217
+	void Cache_Tot_AnimIdx();
 
 	_int Get_Dst_InterAnimIdx(Abgt eSrc, Abgti iDst) // 250213
 	{
@@ -1029,6 +1047,15 @@ public:
 			m_BlendGroups[_int(eBlendGroup)].AnimInfo.pAnim->Reset_CurKeyFrameIndices();
 			m_BlendGroups[_int(eBlendGroup)].AnimInfo.pAnim->Reset_TrackPos();
 			m_BlendGroups[_int(eBlendGroup)].AnimInfo.pAnim->Reset_Inter_Anim();
+
+#ifdef _DEBUG
+
+			cout << endl;
+			cout << "Reset_BlendGroupAnim 호출" << _int(eBlendGroup) << " 번 그룹 애니매이션 정보 초기화" << endl;
+			cout << endl;
+
+#endif
+
 		}
 	}
 
@@ -1256,6 +1283,12 @@ public:
 		if (m_BlendGroups[Abgti(Group)].AnimInfo.bUse)
 		{
 			m_BlendGroups[Abgti(Group)].AnimInfo.bUpdate = bUpdate;
+
+#ifdef _DEBUG
+
+			cout << AnimTypeStr[_int(Group)] << '(' << _int(Group) << ')' << "그룹 업데이트 여부 : " << bUpdate << endl;
+#endif
+
 		}
 	}
 
@@ -1285,9 +1318,7 @@ private:
 	map<string, map<string, vector<pair<string, _float>>>> m_Events;
 
 
-
-	
-
+	vector<vector<_int>>					m_Cache_AnimIdx{ tot + 1 , vector<_int>{}}; // 250217
 
 	// IK
 private:
