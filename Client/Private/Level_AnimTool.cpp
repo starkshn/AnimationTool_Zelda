@@ -98,6 +98,11 @@ HRESULT CLevel_AnimTool::Initialize()
         return E_FAIL;
     
     
+    WCHAR defaultLink[] = L"../Bin/Resources/ny/PlayerTest/Link/LinkwithTestAnim.fbx";
+    if (FAILED(Load_AnimModel_FBX_File(defaultLink, ANIM_MODEL_FBX_LOAD_TYPE::ANIM_MAIN,
+        TEXT("Prototype_Component_Model_DefaultLink"), TEXT("Prototype_GameObject_AT_Obj"))))
+        return E_FAIL;
+
 	return S_OK;
 }
 

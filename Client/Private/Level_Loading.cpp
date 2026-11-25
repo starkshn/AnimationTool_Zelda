@@ -27,7 +27,7 @@ HRESULT CLevel_Loading::Initialize(LEVELID eNextLevelID)
 
 void CLevel_Loading::Update(_float fTimeDelta)
 {
-	if (true == m_pLoader->isFinished() && KEY_DOWN(KEY::SPACE))
+	if (true == m_pLoader->isFinished() && (m_eNextLevelID == LEVEL_ANIMTOOL || KEY_DOWN(KEY::SPACE)))
 	{
 		CLevel*			pNewLevel = { nullptr };
 

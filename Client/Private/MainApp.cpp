@@ -32,7 +32,7 @@ HRESULT CMainApp::Initialize()
 	if (FAILED(Ready_Prototype_Component_For_Static()))
 		return E_FAIL;
 
-	if (FAILED(SetUp_StartLevel(LEVEL_LOGO)))
+	if (FAILED(SetUp_StartLevel(LEVEL_ANIMTOOL)))
 		return E_FAIL;
 
 	return S_OK;
