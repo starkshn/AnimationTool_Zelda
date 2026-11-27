@@ -4,6 +4,8 @@
 #include "AT_Cam.h"
 #include "AT_Terrain.h"
 #include "Sky.h"
+#include "Effect.h"
+#include "Texture.h"
 
 #include <windows.h> // Windows API 사용
 
@@ -139,6 +141,21 @@ HRESULT CLevel_AnimTool::Initialize()
         return E_FAIL;
     
     
+    if (FAILED(m_pGameInstance->Add_Prototype(LEVEL_ANIMTOOL, TEXT("Prototype_Component_Texture_Effect"), CTexture::Create(m_pDevice, m_pContext, TEXT("../Bin/Resources/Textures/Explosion/Explosion%d.png"), 90))))
+    {
+        return E_FAIL;
+    }
+    CEffect* prototype = CEffect::Create(m_pDevice, m_pContext);
+    if (!prototype) { return E_FAIL; }
+    CEffect::PREVIEW_DESC effectDescription;
+    for (int index = 0; index < 8; ++index)
+    {
+        CEffect* effect = static_cast<CEffect*>(prototype->Clone(&effectDescription));
+        if (!effect) { Safe_Release(prototype); return E_FAIL; }
+        m_eventEffects.push_back(effect);
+    }
+    Safe_Release(prototype);
+
     WCHAR defaultLink[] = L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkVer_2.2.fbx";
     if (FAILED(Load_AnimModel_FBX_File(defaultLink, ANIM_MODEL_FBX_LOAD_TYPE::ANIM_MAIN,
         TEXT("Prototype_Component_Model_DefaultLink"), TEXT("Prototype_GameObject_AT_Obj"))))
@@ -167,6 +184,57 @@ void CLevel_AnimTool::Update(_float fTimeDelta)
     // 모든 imgui 렌더
     Render_ImGui();
     Update_Logs(fTimeDelta);
+    Sync_EventPreview();
+    for (auto* effect : m_eventEffects)
+    {
+        effect->Update(fTimeDelta);
+        effect->Late_Update(fTimeDelta);
+    }
+}
+
+void CLevel_AnimTool::Sync_EventPreview()
+{
+    if (!m_pAT_PartAnimObj_Model) { return; }
+    if (m_eventBoundModel == m_pAT_PartAnimObj_Model && m_boundPreviewEvents == m_Events) { return; }
+    if (m_eventBoundModel != m_pAT_PartAnimObj_Model)
+    {
+        for (int index = 0; index < m_eventBoundAnimationCount; ++index)
+        {
+            m_eventBoundModel->Get_Anim(index)->Clear_EventCallbacks();
+        }
+        Safe_Release(m_eventBoundModel);
+        m_eventBoundModel = m_pAT_PartAnimObj_Model;
+        Safe_AddRef(m_eventBoundModel);
+        m_eventBoundAnimationCount = static_cast<int>(m_AnimNamesCStr.size());
+    }
+    m_boundPreviewEvents = m_Events;
+    for (int index = 0; index < static_cast<int>(m_AnimNamesCStr.size()); ++index)
+    {
+        auto* animation = m_pAT_PartAnimObj_Model->Get_Anim(index);
+        animation->Clear_EventCallbacks();
+        const auto found = m_Events.find(animation->Get_AnimName());
+        if (found == m_Events.end()) { continue; }
+        for (const auto& layer : found->second)
+        {
+            for (size_t eventIndex = 0; eventIndex < layer.second.size(); ++eventIndex)
+            {
+                const auto& event = layer.second[eventIndex];
+                const std::string name = event.first;
+                // A distinct key also supports repeated names on the same track.
+                animation->Set_EventCallback(layer.first, std::to_string(eventIndex), event.second, [this, name]() { Trigger_EventPreview(name); });
+            }
+        }
+    }
+}
+
+void CLevel_AnimTool::Trigger_EventPreview(const std::string& eventName)
+{
+    if (!m_showEventVfx || m_eventEffects.empty() || !m_pAT_Obj || !m_pAT_PartAnimObj) { return; }
+    const _matrix world = m_pAT_PartAnimObj->Get_Transform()->Get_WorldMatrix() * m_pAT_Obj->Get_Transform()->Get_WorldMatrix();
+    const float side = eventName == "Left" ? -0.2f : eventName == "Right" ? 0.2f : 0.f;
+    const _vector position = XMVector3TransformCoord(XMVectorSet(side, 0.35f, 0.f, 1.f), world);
+    m_eventEffects[m_nextEventEffect]->Trigger_Preview(position);
+    m_nextEventEffect = (m_nextEventEffect + 1) % m_eventEffects.size();
 }
 
 void CLevel_AnimTool::Update_Logs(_float fTimeDelta)
@@ -424,6 +492,8 @@ void CLevel_AnimTool::Render_Menu()
             ImGui::MenuItem("Transform gizmo", nullptr, &showTransformGizmo);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+        ImGui::Text("%.0f FPS", ImGui::GetIO().Framerate);
         ImGui::Separator();
         ImGui::TextDisabled("WASD / Q,E: move | RMB: look | Space: play / pause");
         ImGui::EndMenuBar();
@@ -5330,7 +5400,7 @@ void CLevel_AnimTool::TestGizmo()
 
 void CLevel_AnimTool::MultiControll_IK_TreeNode()
 {
-    if (ImGui::TreeNode(u8"\uc5ed\uc6b4\ub3d9\ud559 (IK)"))
+    if (ImGui::TreeNode("IK"))
     {
         Show_IK_Options();
 
@@ -5457,6 +5527,10 @@ void CLevel_AnimTool::Begin_Animation_KeyFrame()
 // save, load, clear 버튼이 있고, 키프레임들을 그린다. (직사각형을 그리고 그 안에 | 하얀 선들을 그리는 기능들의 함수들을 호출한다.)
 void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
 {
+    ImGui::Checkbox("Event VFX", &m_showEventVfx);
+    ImGui::SameLine();
+    if (ImGui::Button("Test VFX")) { Trigger_EventPreview(""); }
+
     if (ImGui::Button(u8"\uae30\ubcf8 \ub9c1\ud06c \uc774\ubca4\ud2b8 \ubd88\ub7ec\uc624\uae30"))
     {
         if (FAILED(XML_Load_Events(DefaultEventFile().c_str()))) { eventFileStatus = "Load failed; current events retained."; }
@@ -5601,6 +5675,8 @@ void CLevel_AnimTool::Controll_TrackPosBar(ImDrawList* pDrawList, _float* pCurTr
 
 pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _float* pCurTrackPos, _float fFrameLineStartX, _float fFrameLineStartY, _float fFrameLineEndX, _float fTrackPosBarSizeY, _float fFrameStep)
 {
+    const float previousTrack = *pCurTrackPos;
+    float previewTrack = previousTrack;
     // 현재 선택된 키프레임의 인덱스 (-1이면 선택 안됨)
     static _bool isDragging = false; // 키프레임이 드래그 중인지 확인하는 플래그
 
@@ -5643,6 +5719,7 @@ pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _f
         keyframeMin = { fNewTrackPosBarPosX - 4.f, fFrameLineStartY };                     // 사각형의 왼쪽 위
         keyframeMax = { fNewTrackPosBarPosX + 4.f, fFrameLineStartY + fTrackPosBarSizeY }; // 사각형의 오른쪽 아래
 
+        previewTrack = *pCurTrackPos;
         m_pAT_PartAnimObj_Model->Set_CurAnim_TrackPos(*pCurTrackPos);
     }
 
@@ -5669,6 +5746,7 @@ pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _f
             keyframeMin = { fNewTrackPosBarPosX - 4.f, fFrameLineStartY };                     // 사각형의 왼쪽 위
             keyframeMax = { fNewTrackPosBarPosX + 4.f, fFrameLineStartY + fTrackPosBarSizeY }; // 사각형의 오른쪽 아래
 
+            previewTrack = *pCurTrackPos;
             m_pAT_PartAnimObj_Model->Set_CurAnim_TrackPos(*pCurTrackPos);
         }
     }
@@ -5679,6 +5757,26 @@ pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _f
     // 키프레임 사각형 그리기
     pDrawList->AddRectFilled(keyframeMin, keyframeMax, keyframeColor);
     
+    if (previewTrack != previousTrack)
+    {
+        const auto animation = m_Events.find(m_pAT_PartAnimObj_Model->Get_CurAnim()->Get_AnimName());
+        if (animation != m_Events.end())
+        {
+            for (const auto& layer : animation->second)
+            {
+                for (const auto& event : layer.second)
+                {
+                    const bool crossedForward = previousTrack < event.second && event.second <= previewTrack;
+                    const bool crossedBackward = previewTrack <= event.second && event.second < previousTrack;
+                    if (crossedForward || crossedBackward)
+                    {
+                        Trigger_EventPreview(event.first);
+                    }
+                }
+            }
+        }
+    }
+
     return make_pair(isHovered, isDragging);
 }
 
@@ -6694,11 +6792,18 @@ void CLevel_AnimTool::Free()
 {
 	__super::Free();
 
+    for (int index = 0; index < m_eventBoundAnimationCount; ++index)
+    {
+        m_eventBoundModel->Get_Anim(index)->Clear_EventCallbacks();
+    }
+    Safe_Release(m_eventBoundModel);
+    for (auto*& effect : m_eventEffects) { Safe_Release(effect); }
+    m_eventEffects.clear();
+
     delete m_pAnimToolUtilObj;
     m_pAnimToolUtilObj = nullptr;
 
-    Safe_Release(m_pAT_Obj);
-
-    for (_int i = 0; m_RayVec.size(); ++i)
-        Safe_Release(m_RayVec[i]);
+    // These pointers are borrowed from layers; layers release the objects.
+    m_pAT_Obj = nullptr;
+    m_RayVec.clear();
 }

@@ -20,7 +20,8 @@ HRESULT CEffect::Initialize_Prototype()
 }
 
 HRESULT CEffect::Initialize(void * pArg)
-{	
+{
+    m_preview = pArg && static_cast<PREVIEW_DESC*>(pArg)->preview;
 	if (FAILED(__super::Initialize(pArg)))
 		return E_FAIL;
 
@@ -38,8 +39,25 @@ void CEffect::Priority_Update(_float fTimeDelta)
 	int a = 10;
 }
 
+void CEffect::Trigger_Preview(_vector position)
+{
+    m_previewActive = true;
+    m_fFrame = 0.f;
+    m_pTransformCom->Set_State(CTransform::STATE_POSITION, position);
+    m_pTransformCom->Scaling(0.7f, 0.7f, 0.7f);
+}
+
 void CEffect::Update(_float fTimeDelta)
-{	
+{
+    if (m_preview)
+    {
+        if (!m_previewActive) { return; }
+        m_fFrame += 200.f * fTimeDelta;
+        if (m_fFrame >= 90.f) { m_previewActive = false; return; }
+        m_pTransformCom->LookAt(XMLoadFloat4(m_pGameInstance->Get_CamPosition()));
+        Compute_ViewZ();
+        return;
+    }
 	m_fFrame += 90.f * fTimeDelta;
 
 	if (m_fFrame >= 90.f)
@@ -50,6 +68,7 @@ void CEffect::Update(_float fTimeDelta)
 
 void CEffect::Late_Update(_float fTimeDelta)
 {
+    if (m_preview && !m_previewActive) { return; }
 	m_pGameInstance->Add_RenderObject(CRenderer::RG_BLEND, this);
 }
 
@@ -58,7 +77,7 @@ HRESULT CEffect::Render()
 	if (FAILED(Bind_ShaderResources()))
 		return E_FAIL;
 
-	m_pShaderCom->Begin(1);
+	m_pShaderCom->Begin(m_preview ? 2 : 1);
 
 	m_pVIBufferCom->Bind_BufferDesc();
 
@@ -80,7 +99,7 @@ HRESULT CEffect::Ready_Components()
 		return E_FAIL;
 
 	/* Com_Texture */
-	if (FAILED(Add_Component(LEVEL_GAMEPLAY, TEXT("Prototype_Component_Texture_Effect"),
+	if (FAILED(Add_Component(m_preview ? LEVEL_ANIMTOOL : LEVEL_GAMEPLAY, TEXT("Prototype_Component_Texture_Effect"),
 		TEXT("Com_Texture"), reinterpret_cast<CComponent**>(&m_pTextureCom))))
 		return E_FAIL;
 
@@ -100,7 +119,7 @@ HRESULT CEffect::Bind_ShaderResources()
 	if (FAILED(m_pTextureCom->Bind_ShaderResource(m_pShaderCom, "g_Texture", static_cast<_uint>(m_fFrame))))
 		return E_FAIL;
 
-	if (FAILED(m_pGameInstance->Bind_RT_ShaderResource(m_pShaderCom, "g_DepthTexture", TEXT("Target_Depth"))))
+	if (!m_preview && FAILED(m_pGameInstance->Bind_RT_ShaderResource(m_pShaderCom, "g_DepthTexture", TEXT("Target_Depth"))))
 		return E_FAIL;
 
 	return S_OK;

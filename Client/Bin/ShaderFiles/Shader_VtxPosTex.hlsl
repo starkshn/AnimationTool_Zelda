@@ -119,6 +119,15 @@ PS_OUT  PS_MAIN_SOFT_EFFECT(PS_IN_SOFT_EFFECT In)
 
 }
 
+RasterizerState PreviewRasterizer { FillMode = SOLID; CullMode = NONE; };
+DepthStencilState PreviewDepth { DepthEnable = true; DepthWriteMask = zero; DepthFunc = less_equal; };
+PS_OUT PS_EVENT_PREVIEW(PS_IN In)
+{
+    PS_OUT Out;
+    Out.vColor = g_Texture.Sample(LinearSampler, In.vTexcoord);
+    return Out;
+}
+
 technique11			DefaultTechnique
 {
 	/* 우리가 수행해야할 정점, 픽셀 셰이더의 진입점 함수를 지정한다. */
@@ -145,4 +154,13 @@ technique11			DefaultTechnique
 	}
 
 
+    pass EventPreview
+    {
+        SetRasterizerState(PreviewRasterizer);
+        SetDepthStencilState(PreviewDepth, 0);
+        SetBlendState(BS_AlphaBlend, float4(0,0,0,0), 0xffffffff);
+        VertexShader = compile vs_5_0 VS_MAIN();
+        GeometryShader = NULL;
+        PixelShader = compile ps_5_0 PS_EVENT_PREVIEW();
+    }
 }

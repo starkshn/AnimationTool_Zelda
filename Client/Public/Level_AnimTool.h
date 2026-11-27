@@ -284,6 +284,16 @@ public:
 	enum BONE_CONTROLL_TYPE { BONE_DEFAULT, BONE_EXCLUDE };
 
 private:
+    std::vector<class CEffect*> m_eventEffects;
+    size_t m_nextEventEffect = 0;
+    bool m_showEventVfx = true;
+    class CModel* m_eventBoundModel = nullptr;
+    int m_eventBoundAnimationCount = 0;
+    std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, _float>>>> m_boundPreviewEvents;
+    void Sync_EventPreview();
+    void Trigger_EventPreview(const std::string& eventName);
+
+private:
 	CLevel_AnimTool(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
 	virtual ~CLevel_AnimTool() = default;
 

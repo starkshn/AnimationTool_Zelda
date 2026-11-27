@@ -84,6 +84,14 @@ private: // events 250202
 	}
 	friend class CModel;
 
+public:
+    void Clear_EventCallbacks() { m_EventCallBacks.clear(); }
+    void Set_EventCallback(const string& layer, const string& name, _float track, function<void()> callback)
+    {
+        m_EventCallBacks[layer][name] = make_pair(track, callback);
+    }
+
+private:
 	void Check_Events(_float fCurTrackPos, _float fTimeDelta); // 250202
 
 public:

@@ -15,6 +15,13 @@ BEGIN(Client)
 class CEffect final : public CAlphaObject
 {
 
+public:
+    struct PREVIEW_DESC : public CGameObject::GAMEOBJECT_DESC { bool preview = true; };
+    void Trigger_Preview(_vector position);
+private:
+    bool m_preview = false;
+    bool m_previewActive = false;
+
 private:
 	CEffect(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
 	CEffect(const CEffect& Prototype);
