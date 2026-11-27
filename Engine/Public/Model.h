@@ -127,6 +127,7 @@ private:
 	_uint						m_iCurrentAnimIndex = {};
 	_bool						m_isLoop = { false };
 	_uint						m_iNumAnimations = {};
+	_int m_iFinalize_ResetExceptionAnimIdx = -1;
 	vector<CAnimation*>			m_Animations;
 	_bool						m_isFinished = { false };
 

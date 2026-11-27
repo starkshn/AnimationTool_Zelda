@@ -133,17 +133,15 @@ struct ExampleDualListBox
 
 	void Show()
 	{
-		if (ImGui::BeginTable("split", 3, ImGuiTableFlags_None))
+		if (ImGui::BeginTable("split", 1, ImGuiTableFlags_None))
 		{
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);    // Source
-			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);      // Buttons
-			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);    // Blend
 			ImGui::TableNextRow();
 
 			int request_move_selected = -1;
 			int request_move_all = -1;
 
-			float list_box_height = ImGui::GetFontSize() * 20; // 리스트 박스의 높이
+			float list_box_height = ImGui::GetFontSize() * 9; // 리스트 박스의 높이
 			float button_area_height = list_box_height;       // 버튼 영역의 높이를 리스트 박스와 동일하게 설정
 			float button_height = ImGui::GetFrameHeight();    // 버튼의 높이
 			float button_offset = (button_area_height - (button_height * 2)) / 2; // 버튼을 중앙에 정렬하기 위한 오프셋
@@ -153,7 +151,8 @@ struct ExampleDualListBox
 				ImVector<ImGuiID>& items = Items[side];
 				ImGuiSelectionBasicStorage& selection = Selections[side];
 
-				ImGui::TableSetColumnIndex((side == 0) ? 0 : 2);
+				ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
 				ImGui::Text("%s (%d)", (side == 0) ? "Source" : "Blend", items.Size);
 
 				bool child_visible = ImGui::BeginChild(side == 0 ? "0" : "1", ImVec2(-FLT_MIN, list_box_height), ImGuiChildFlags_FrameStyle | (side == 0 ? ImGuiChildFlags_ResizeY : 0));
@@ -171,6 +170,7 @@ struct ExampleDualListBox
 
 						string strRet = "idx : " + to_string(item_n) + " | " + m_AnimNamesCStr[item_id];
 						ImGui::Selectable(strRet.c_str(), item_is_selected, ImGuiSelectableFlags_AllowDoubleClick);
+                        if (ImGui::IsItemHovered()) { ImGui::SetTooltip("%s", strRet.c_str()); }
 						if (ImGui::IsItemFocused())
 						{
 							if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter))
@@ -187,16 +187,17 @@ struct ExampleDualListBox
 			}
 
 			// 버튼 영역 중앙 정렬
-			ImGui::TableSetColumnIndex(1);
+			ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
 
-			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + button_offset); // 첫 번째 버튼 중앙 배치
+			 // 첫 번째 버튼 중앙 배치
 			ImVec2 button_sz = { ImGui::GetFrameHeight(), ImGui::GetFrameHeight() };
 
-			if (ImGui::Button(">", button_sz))
+			if (ImGui::Button("Add selected to blend"))
 				request_move_selected = 0;
 
 			ImGui::SetCursorPosY(ImGui::GetCursorPosY()); // 두 번째 버튼 간격 추가
-			if (ImGui::Button("<", button_sz))
+			if (ImGui::Button("Remove from blend"))
 				request_move_selected = 1;
 
 			if (request_move_all != -1)
@@ -208,7 +209,7 @@ struct ExampleDualListBox
 		}
 
 		// Blend 리스트에 있는 아이템 이름 출력
-		ImGui::Text("Current Blend Item: %s", GetBlendItemName());
+		ImGui::TextWrapped("Current blend: %s", GetBlendItemName());
 	}
 };
 

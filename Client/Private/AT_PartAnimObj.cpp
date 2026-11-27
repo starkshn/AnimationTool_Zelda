@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "AT_Obj.h"
 #include "Animation.h"
+#include "Bone.h"
 
 #include <iostream>
 #include <filesystem>
@@ -51,7 +52,20 @@ HRESULT CAT_PartAnimObj::Initialize(void* pArg)
     // auto& Pair = m_AnimPlayLists.front();
     // Set_CurAnimIdx(Pair.first, Pair.second);
 
-    Set_CurAnimIdx(56, 1);
+    const auto& animationNames = m_pModelCom->Get_AnimNames();
+    if (!animationNames.empty())
+    {
+        _int initialClip = 0;
+        for (_int index = 0; index < static_cast<_int>(animationNames.size()); ++index)
+        {
+            if (animationNames[index] == "Armature|Nml_Wait")
+            {
+                initialClip = index;
+                break;
+            }
+        }
+        Set_CurAnimIdx(initialClip, true);
+    }
 
     return S_OK;
 }
@@ -138,6 +152,65 @@ HRESULT CAT_PartAnimObj::Render()
         m_pModelCom->Render(i);
     }
 
+    return Render_DefaultHead();
+}
+
+HRESULT CAT_PartAnimObj::Load_DefaultHead()
+{
+    Safe_Release(m_pHeadModel);
+    m_HeadSourceBones.clear();
+    m_pHeadModel = CModel::Create(m_pDevice, m_pContext, MODEL_TYPE::TYPE_ANIM, "../Bin/Resources/ny/PlayerTest/HeadA/HeadA_ExportFromBlender.fbx", XMMatrixRotationY(XMConvertToRadians(180.f)));
+    if (!m_pHeadModel)
+    {
+        return E_FAIL;
+    }
+    for (CBone* headBone : *m_pHeadModel->Get_Bones_Ptr())
+    {
+        m_HeadSourceBones.push_back(m_pModelCom->Get_Bone(headBone->Get_Name()));
+    }
+    return S_OK;
+}
+
+HRESULT CAT_PartAnimObj::Render_DefaultHead()
+{
+    if (!m_pHeadModel || !m_bShowDefaultHead)
+    {
+        return S_OK;
+    }
+    // The accessory follows the evaluated body pose, including scrubbing and IK.
+    // No second animation player is run for the head.
+    const auto& headBones = *m_pHeadModel->Get_Bones_Ptr();
+    for (size_t index = 0; index < headBones.size(); ++index)
+    {
+        CBone* headBone = headBones[index];
+        if (m_HeadSourceBones[index])
+        {
+            headBone->Set_Bone_CombinedTransformationMatrix(m_HeadSourceBones[index]->Get_CombinedTransformationMatrix());
+        }
+        else
+        {
+            _matrix combined = XMLoadFloat4x4(headBone->Get_TransformationMatrix_Ptr());
+            const _int parent = headBone->Get_Parent_BoneIdx();
+            if (parent >= 0)
+            {
+                combined *= headBones[parent]->Get_CombinedTransformationMatrix();
+            }
+            headBone->Set_Bone_CombinedTransformationMatrix(combined);
+        }
+    }
+    for (_uint meshIndex = 0; meshIndex < m_pHeadModel->Get_NumMeshes(); ++meshIndex)
+    {
+        if (FAILED(m_pHeadModel->Bind_Material(m_pShaderCom, "g_DiffuseTexture", meshIndex, aiTextureType_DIFFUSE, 0)))
+        {
+            return E_FAIL;
+        }
+        if (FAILED(m_pHeadModel->Bind_BoneMatrices(m_pShaderCom, "g_BoneMatrices", meshIndex)))
+        {
+            return E_FAIL;
+        }
+        m_pShaderCom->Begin(0);
+        m_pHeadModel->Render(meshIndex);
+    }
     return S_OK;
 }
 
@@ -419,6 +492,7 @@ void CAT_PartAnimObj::Free()
 {
     __super::Free();
 
+    Safe_Release(m_pHeadModel);
     Safe_Release(m_pShaderCom);
     Safe_Release(m_pModelCom);
 }

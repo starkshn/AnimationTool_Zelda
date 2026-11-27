@@ -47,6 +47,10 @@ void CAT_Stair::Update(_float fTimeDelta)
 
 void CAT_Stair::Late_Update(_float fTimeDelta)
 {
+    if (!showPreviewEnvironment)
+    {
+        return;
+    }
     m_pGameInstance->Add_RenderObject(CRenderer::RG_NONBLEND, this);
 }
 

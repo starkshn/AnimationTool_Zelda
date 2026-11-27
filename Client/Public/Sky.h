@@ -5,7 +5,6 @@
 
 BEGIN(Engine)
 class CShader;
-class CTexture;
 class CVIBuffer_Cube;
 END
 
@@ -33,7 +32,6 @@ public:
 
 private:
 	CShader*				m_pShaderCom = { nullptr };
-	CTexture*				m_pTextureCom = { nullptr };
 	CVIBuffer_Cube*			m_pVIBufferCom = { nullptr };
 
 private:

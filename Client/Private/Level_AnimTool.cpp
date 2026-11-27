@@ -2,6 +2,8 @@
 #include "..\Public\Level_AnimTool.h"
 #include "GameInstance.h"
 #include "AT_Cam.h"
+#include "AT_Terrain.h"
+#include "Sky.h"
 
 #include <windows.h> // Windows API 사용
 
@@ -41,6 +43,27 @@ const float iconSize = 20.0f;
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 // In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.md)
+static bool SelectAnimationClip(const char* fullName, bool selected)
+{
+    const char* separator = strchr(fullName, '|');
+    const char* displayName = separator ? separator + 1 : fullName;
+    const std::string label = std::string(displayName) + "##" + fullName;
+    const bool clicked = ImGui::Selectable(label.c_str(), selected);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("%s", fullName);
+    }
+    return clicked;
+}
+
+static bool BeginToolCombo(const char* label, const char* preview)
+{
+    ImGui::TextWrapped("%s", label);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    const std::string identifier = std::string("##") + label;
+    return ImGui::BeginCombo(identifier.c_str(), preview);
+}
+
 static void HelpMarker(const char* desc)
 {
     ImGui::TextDisabled("(?)");
@@ -85,7 +108,9 @@ HRESULT CLevel_AnimTool::Initialize()
     if (FAILED(Ready_Layer_AnimTool_Object(TEXT("Layer_AnimToolObject"))))
         return E_FAIL;
 
-    if (FAILED(Ready_Layer_AnimTool_Terrain(TEXT("Layer_AnimToolTerrain"))))
+    if (FAILED(m_pGameInstance->Add_Prototype(LEVEL_ANIMTOOL, TEXT("Prototype_GameObject_PreviewSky"), CSky::Create(m_pDevice, m_pContext))))
+        return E_FAIL;
+    if (FAILED(m_pGameInstance->Add_GameObject_ToLayer(LEVEL_ANIMTOOL, TEXT("Prototype_GameObject_PreviewSky"), LEVEL_ANIMTOOL, TEXT("Layer_PreviewSky"))))
         return E_FAIL;
 
     if (FAILED(Ready_Layer_AnimTool_Square(TEXT("Layer_AnimToolSquare"))))
@@ -98,10 +123,15 @@ HRESULT CLevel_AnimTool::Initialize()
         return E_FAIL;
     
     
-    WCHAR defaultLink[] = L"../Bin/Resources/ny/PlayerTest/Link/LinkwithTestAnim.fbx";
+    WCHAR defaultLink[] = L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkVer_2.2.fbx";
     if (FAILED(Load_AnimModel_FBX_File(defaultLink, ANIM_MODEL_FBX_LOAD_TYPE::ANIM_MAIN,
         TEXT("Prototype_Component_Model_DefaultLink"), TEXT("Prototype_GameObject_AT_Obj"))))
         return E_FAIL;
+
+    if (FAILED(m_pAT_PartAnimObj->Load_DefaultHead()))
+    {
+        return E_FAIL;
+    }
 
 	return S_OK;
 }
@@ -222,8 +252,8 @@ HRESULT CLevel_AnimTool::Ready_Layer_AnimTool_Camera(const _wstring& strLayerTag
     Desc.fAspect = static_cast<_float>(g_iWinSizeX) / g_iWinSizeY;
     Desc.fNear = 0.1f;
     Desc.fFar = 1000.f;
-    Desc.vEye = _float3(0.f, 2.f, 5.f);
-    Desc.vAt = _float3(0.f, 0.f, 0.f);
+    Desc.vEye = _float3(0.f, 1.3f, 3.0f);
+    Desc.vAt = _float3(0.f, 0.5f, 0.f);
 
     if (FAILED(m_pGameInstance->Add_GameObject_ToLayer(LEVEL_ANIMTOOL, TEXT("Prototype_GameObject_AnimToolCamera"), LEVEL_ANIMTOOL, strLayerTag, &Desc)))
         return E_FAIL;
@@ -304,101 +334,130 @@ void CLevel_AnimTool::Render_ImGui()
     Active_Ray_AtBone(); // 뼈 레이 출력
 }
 
+namespace
+{
+    bool showAnimationLog = false;
+    bool showTransformGizmo = false;
+    constexpr float menuHeight = 36.f;
+    constexpr float timelineHeight = 250.f;
+    constexpr float panelWidth = 350.f;
+    constexpr ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
+
+    void PlaceAnimationPanel(float offsetX, float offsetY, float width, float height)
+    {
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + offsetX, viewport->Pos.y + offsetY));
+        ImGui::SetNextWindowSize(ImVec2(width, height));
+    }
+}
+
 void CLevel_AnimTool::Render_Menu()
 {
-    ImGuiWindowFlags window_flags = 0;
-    window_flags |= ImGuiWindowFlags_NoTitleBar;
-
-    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255)); // 흰색 텍스트
-
-    // 창 위치 고정
+    static bool styled = false;
+    if (!styled)
     {
-        // 메인 뷰포트를 가져옴 (프로그램 창의 클라이언트 영역 정보)
-        // ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-
-        // 프로그램 창의 좌상단을 기준으로 창 위치 설정
-        ImGui_Fix_Window_Pos(ImGui_Get_ViewPort_StartPos());
-
-        // 창 크기 고정 (원하는 크기로 설정 가능)
-        ImGui_Fix_Window_Scale(ImVec2(g_iWinSizeX, 30));
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowPadding = ImVec2(14.f, 12.f);
+        style.FramePadding = ImVec2(8.f, 5.f);
+        style.ItemSpacing = ImVec2(8.f, 8.f);
+        style.WindowRounding = 0.f;
+        style.FrameRounding = 3.f;
+        style.GrabRounding = 3.f;
+        style.WindowBorderSize = 1.f;
+        style.Colors[ImGuiCol_WindowBg] = ImVec4(0.075f, 0.085f, 0.105f, 1.f);
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.11f, 0.13f, 0.16f, 1.f);
+        style.Colors[ImGuiCol_TitleBgActive] = style.Colors[ImGuiCol_TitleBg];
+        style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.1f, 0.12f, 0.15f, 1.f);
+        style.Colors[ImGuiCol_FrameBg] = ImVec4(0.14f, 0.17f, 0.21f, 1.f);
+        style.Colors[ImGuiCol_Button] = ImVec4(0.17f, 0.23f, 0.28f, 1.f);
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.22f, 0.38f, 0.45f, 1.f);
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.19f, 0.48f, 0.57f, 1.f);
+        style.Colors[ImGuiCol_Header] = ImVec4(0.16f, 0.32f, 0.39f, 1.f);
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.35f, 0.8f, 0.9f, 1.f);
+        style.Colors[ImGuiCol_SliderGrab] = style.Colors[ImGuiCol_CheckMark];
+        ImGui::GetIO().FontGlobalScale = 1.f;
+        styled = true;
     }
 
-    ImGui::Begin("Anim Tool", nullptr, window_flags | ImGuiWindowFlags_MenuBar);
-
-    if (ImGui::BeginMenuBar()) // 메뉴바 시작
+    PlaceAnimationPanel(0.f, 0.f, ImGui::GetMainViewport()->Size.x, menuHeight);
+    ImGui::Begin("Animation workspace", nullptr, panelFlags | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
+    if (ImGui::BeginMenuBar())
     {
-
-        if (ImGui::BeginMenu("Load")) // "Menu"는 메뉴 이름입니다.
+        ImGui::TextUnformatted("ANIMATION TOOL");
+        ImGui::Separator();
+        if (ImGui::BeginMenu("Load"))
         {
-            // 메뉴 내용 추가 가능
             Show_OpenItems_MenuItem();
-
             ImGui::EndMenu();
         }
-
-        if (ImGui::BeginMenu("Save")) // "Examples"는 메뉴 이름입니다.
+        if (ImGui::BeginMenu("Save"))
         {
             Show_OpenItems_Saves();
-
             ImGui::EndMenu();
         }
-
-
-        if (ImGui::BeginMenu("Help"))
+        if (ImGui::BeginMenu("View"))
         {
-            ImGui::TextLinkOpenURL("https://imported-denim-880.notion.site/AnimTool-1814bccaf9eb802e83f9f8897c49d9ab?pvs=4");
 
-            /*if (ImGui::MenuItem())
-            {
-                ImGui::BulletText("Read the FAQ at ");
-                ImGui::SameLine(0, 0);
-                ;
-            }*/
-
+            ImGui::MenuItem("IK stairs", nullptr, &CAT_Stair::showPreviewEnvironment);
+            ImGui::MenuItem("Log", nullptr, &showAnimationLog);
+            ImGui::MenuItem("Transform gizmo", nullptr, &showTransformGizmo);
             ImGui::EndMenu();
         }
-
-
-        ImGui::EndMenuBar(); // 메뉴 바 종료
+        ImGui::Separator();
+        ImGui::TextDisabled("WASD / Q,E: move | RMB: look | Space: play / pause");
+        ImGui::EndMenuBar();
     }
-
-    // ImGui 코드
-    ImGui::PopStyleColor();
-
     ImGui::End();
 }
 
 void CLevel_AnimTool::Render_ShowObjectInfo()
 {
-    ImGui_Fix_Window_Pos(ImVec2{ ImGui_Get_ViewPort_StartPos().x, ImGui_Get_ViewPort_StartPos().y + 30.f});
-
-    if (m_pAT_Obj)
+    const ImVec2 size = ImGui::GetMainViewport()->Size;
+    const float panelWidth = min(350.f, size.x * 0.28f);
+    const float sideHeight = max(80.f, size.y - menuHeight - min(timelineHeight, size.y * 0.30f));
+    PlaceAnimationPanel(0.f, menuHeight, panelWidth, sideHeight);
+    ImGui::Begin("Animation", nullptr, panelFlags);
+    if (m_pAT_PartAnimObj_Model && m_pAT_PartAnimObj_Model->Get_ModelType() == Engine::MODEL_TYPE::TYPE_ANIM)
     {
-        _bool bOpen = ImGui::Begin("Load Object Info", nullptr, ImGuiWindowFlags_MenuBar | ImGuiTableFlags_SizingStretchProp);
-        if (bOpen)
-        {
-            // ShowObject의 Transform 데이터를 띄운다.
-            MultiControll_Transform_TreeNode(); 
-
-            // AnimModel의 경우 애니매이션 정보를 띄운다.
-            if (Engine::MODEL_TYPE::TYPE_ANIM == m_pAT_PartAnimObj_Model->Get_ModelType())
-                MultiControll_AnimModel_Animation_TreeNode();
-
-            // fbx 본 정보 띄우는 함수
-            MultiControll_Bone();
-
-            // 메쉬 정보들을 띄우는 함수
-            MultiControll_ModelMeshNames_TreeNode(); 
-
-            // TestGizmo();
-
-            MultiControll_IK_TreeNode();
-        }
-        ImGui::End();
+        m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_PLAY_TYPE] = Show_AnimPlayType_ComboBox();
     }
+    ImGui::End();
 
-   
-    Show_AnimLog();
+    PlaceAnimationPanel(size.x - panelWidth, menuHeight, panelWidth, sideHeight);
+    ImGui::Begin("Inspector", nullptr, panelFlags);
+    if (ImGui::CollapsingHeader("Animation details"))
+    {
+        m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIMINFO_TEXT] = Show_AnimInfo_Text(m_iCurAnimIdx);
+    }
+    if (m_pAT_PartAnimObj->Has_DefaultHead())
+    {
+        ImGui::Checkbox("Link hood / hair", &m_pAT_PartAnimObj->m_bShowDefaultHead);
+        ImGui::Separator();
+    }
+    MultiControll_Transform_TreeNode();
+    if (ImGui::CollapsingHeader("Root motion"))
+    {
+        m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_ROOT_MOTION_PLAY] = Show_AnimRootMotionType_RadioBtn();
+    }
+    if (ImGui::CollapsingHeader("Transitions / Keyframes"))
+    {
+        m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_INTERPOLATION] = Show_InterpolationTable();
+        m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_KEYFRAME] = Show_Anim_KeyFrames();
+    }
+    MultiControll_Bone();
+    MultiControll_ModelMeshNames_TreeNode();
+    MultiControll_IK_TreeNode();
+    ImGui::End();
+
+    Begin_Animation_KeyFrame();
+    if (showTransformGizmo)
+    {
+        TestGizmo();
+    }
+    if (showAnimationLog)
+    {
+        Show_AnimLog();
+    }
 }
 
 _bool CLevel_AnimTool::Open_Modal(string strEx, WCHAR* pRetPath)
@@ -930,7 +989,7 @@ void CLevel_AnimTool::Show_IK_Options()
     static _int iSelectedIKOptionIdx = 0;
     const _char* pComboSelectIkOptionName = pIKOptions[iSelectedIKOptionIdx];
 
-    if (ImGui::BeginCombo("IK Options", pComboSelectIkOptionName))
+    if (BeginToolCombo("IK Options", pComboSelectIkOptionName))
     {
         for (int n = 0; n < IM_ARRAYSIZE(pIKOptions); n++)
         {
@@ -969,7 +1028,7 @@ void CLevel_AnimTool::Show_IK_Controll_UpdateExcludeBone()
     static _int iSelectedControllUpdateExcludeBoneOptionIdx = 0;
     const _char* pComboCurControllOption = pControllUpdateExcludeBoneOptions[iSelectedControllUpdateExcludeBoneOptionIdx];
 
-    if (ImGui::BeginCombo("Controll Update Exclude Bone Option", pComboCurControllOption))
+    if (BeginToolCombo("Controll Update Exclude Bone Option", pComboCurControllOption))
     {
         for (int n = 0; n < IM_ARRAYSIZE(pControllUpdateExcludeBoneOptions); n++)
         {
@@ -1501,7 +1560,7 @@ HRESULT CLevel_AnimTool::Load_NonAnimModel_FBX_File(WCHAR* strFBXModelFilePath)
 
 void CLevel_AnimTool::MultiControll_Transform_TreeNode()
 {
-    if (ImGui::TreeNode("Multi-Controll-Transform"))
+    if (ImGui::TreeNode("Transform"))
     {
         auto pCom = m_pAT_Obj->Get_Transform();
         if (pCom)
@@ -1547,7 +1606,7 @@ void CLevel_AnimTool::MultiControll_Bone()
 {
     // static _bool bOpend = false;
 
-    if (ImGui::TreeNode("Multi-Controll-Bone"))
+    if (ImGui::TreeNode("Skeleton"))
     {
         // 뼈 전체 정보 로드하는 버튼
         m_bMultiControllsBone[AT_MC_BONE_TYPE::LOAD_BONE_DATA_BTN] = Show_LoadBoneData_Btn();
@@ -1773,9 +1832,9 @@ _bool CLevel_AnimTool::Show_AnimInfo_Text(_int iCurAnimIdx)
 _bool CLevel_AnimTool::Show_AnimRootMotionType_RadioBtn()
 {
     static _int iRootMotion = 0;
-    ImGui::RadioButton("Default Anim Play", &iRootMotion, 0); ImGui::SameLine(); HelpMarker("Play Original Animation");  ImGui::SameLine();
-    ImGui::RadioButton("Root Motion", &iRootMotion, 1); ImGui::SameLine(); HelpMarker("Play Root Animation : Fix position at zero, stay rotaion"); ImGui::SameLine();
-    ImGui::RadioButton("Identity", &iRootMotion, 2); ImGui::SameLine(); HelpMarker("Play Identity : Fix position, fix rotation"); ImGui::SameLine();
+    ImGui::RadioButton("Default Anim Play", &iRootMotion, 0); ImGui::SameLine(); HelpMarker("Play Original Animation");
+    ImGui::RadioButton("Root Motion", &iRootMotion, 1); ImGui::SameLine(); HelpMarker("Keep root rotation, remove root translation");
+    ImGui::RadioButton("Identity", &iRootMotion, 2); ImGui::SameLine(); HelpMarker("Remove root translation and rotation");
     ImGui::RadioButton("Follow Root Bone", &iRootMotion, 3); ImGui::SameLine(); HelpMarker("Follow Root Bone Data");
 
     // 원점 재생 Deault
@@ -1815,11 +1874,11 @@ _bool CLevel_AnimTool::Show_AnimRootMotionType_RadioBtn()
 
 _bool CLevel_AnimTool::Show_AnimPlayType_ComboBox()
 {
-    static const _char* pAnimPlayTestTypes[] = { "Default", "Loop Default", "Loop Interpolation", "Loop Blending" };
+    static const _char* pAnimPlayTestTypes[] = { "Single clip", "Sequence (no blend)", "Crossfade", "Body blending" };
     static _int iSelectedAnimPlayTestTypeIdx = 0;
     const _char* pComboSelectedAnimPlaytestTypeName = pAnimPlayTestTypes[iSelectedAnimPlayTestTypeIdx];
 
-    if (ImGui::BeginCombo("anim play test type combo", pComboSelectedAnimPlaytestTypeName))
+    if (BeginToolCombo("Mode", pComboSelectedAnimPlaytestTypeName))
     {
         for (int n = 0; n < IM_ARRAYSIZE(pAnimPlayTestTypes); n++)
         {
@@ -1941,7 +2000,7 @@ void CLevel_AnimTool::Show_Default_AnimPlayTest()
     ImVec2 buttonSize = ImVec2(150, 50);
 
     // 함수 호출 (왼쪽과 오른쪽 버튼 레이블 지정)
-    Show_PlayAnim_Btn("Prev Anim", "Stop Or Play Anim", "Next Anim", buttonSize);
+    Show_PlayAnim_Btn("Previous", "Play / Pause", "Next", buttonSize);
 }
 
 void CLevel_AnimTool::Show_AnimInfos_ListBox()
@@ -1954,8 +2013,7 @@ void CLevel_AnimTool::Show_AnimInfos_ListBox()
         m_fTickPerSecond = pCurAnim->Get_TickPerSecond();
         _float fCustumTickPerSecond = pCurAnim->Get_TickPerSecond();
 
-        ImGui::InputFloat("anim play speed input", &fCustumTickPerSecond);
-        ImGui::DragFloat("anim play speed drag", &fCustumTickPerSecond, 0.01f, 0.f, 100.f);
+        ImGui::DragFloat("Ticks / sec", &fCustumTickPerSecond, 0.01f, 0.f, 100.f);
         
         if (m_fTickPerSecond != fCustumTickPerSecond)
             pCurAnim->Set_TickPerSecond(fCustumTickPerSecond);
@@ -2046,8 +2104,8 @@ void CLevel_AnimTool::Show_AnimLog()
 void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
 {
     // 애니메이션 리스트 박스 폭 조정
-    _float listBoxWidth = 400.0f; // 원하는 리스트 박스 폭 설정
-    _float listBoxHeight = 200.0f; // 원하는 리스트 박스 높이 설정
+    _float listBoxWidth = ImGui::GetContentRegionAvail().x; // 원하는 리스트 박스 폭 설정
+    _float listBoxHeight = 140.0f; // 원하는 리스트 박스 높이 설정
 
     static _int iSelectSrcAnimIdx = 0;
     static _int iSelectDstAnimIdx = 0;
@@ -2056,7 +2114,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("src-anim");
+        ImGui::Text("Start clip");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, listBoxHeight)))
         {
@@ -2065,7 +2123,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectSrcAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectSrcAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2077,16 +2135,16 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
             }
             ImGui::EndListBox();
         }
-        ImGui::SameLine();
+
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    ImGui::SameLine();
+
 
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("dst-anim");
+        ImGui::Text("End clip");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, listBoxHeight)))
         {
@@ -2095,7 +2153,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectDstAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectDstAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2109,11 +2167,11 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
             ImGui::EndListBox();
         }
 
-        ImGui::SameLine();
+
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    if (ImGui::Button("play default anim loop test"))
+    if (ImGui::Button("Play sequence"))
     {
         PlayAnimTest_StartBtn(iSelectSrcAnimIdx, iSelectDstAnimIdx, PartAnimObj_Type::ANIM_PLAY_TYPE::MULTI_DEFAULT);
     }
@@ -2125,7 +2183,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
 
 
     // 애니메이션 리스트 박스 폭 조정
-    _float listBoxWidth = 200.0f; // 원하는 리스트 박스 폭 설정
+    _float listBoxWidth = ImGui::GetContentRegionAvail().x; // 원하는 리스트 박스 폭 설정
 
     static _int iSelectSrcAnimIdx = 0;
     static _int iSelectMidAnimIdx = 0;
@@ -2135,16 +2193,16 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("src-anim");
+        ImGui::Text("Start clip");
         ImGui::SetNextItemWidth(listBoxWidth);
-        if (ImGui::BeginListBox("##Src(Start) Anim List"))
+        if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
             static _bool bSelectSrcAnimHighLighten = false;
 
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectSrcAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectSrcAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2156,27 +2214,27 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
             }
             ImGui::EndListBox();
         }
-        ImGui::SameLine();
+
         HelpMarker("Here we are select start anim."); // 보간을 시작할 애니매이션 선택한다.
 
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    ImGui::SameLine();
+
 
     // 중간 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("mid-anim");
+        ImGui::Text("Middle clip");
         ImGui::SetNextItemWidth(listBoxWidth);
-        if (ImGui::BeginListBox("##Mid Anim List"))
+        if (ImGui::BeginListBox("##Mid Anim List", ImVec2(listBoxWidth, 140.f)))
         {
             static _bool bSelectSrcAnimHighLighten = false;
 
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectMidAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectMidAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2190,26 +2248,26 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
             ImGui::EndListBox();
         }
 
-        ImGui::SameLine();
+
         HelpMarker("Here we are select mid anim."); // 보간을 시작할 애니매이션 선택한다.
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    ImGui::SameLine();
+
 
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("dst-anim");
+        ImGui::Text("End clip");
         ImGui::SetNextItemWidth(listBoxWidth);
-        if (ImGui::BeginListBox("##Dst(End) Anim List"))
+        if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
             static _bool bSelectSrcAnimHighLighten = false;
 
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectDstAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectDstAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2223,21 +2281,21 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
             ImGui::EndListBox();
         }
 
-        ImGui::SameLine();
+
         HelpMarker("Here we are select end anim."); // 보간을 시작할 애니매이션 선택한다.
         ImGui::EndGroup(); // 그룹 종료
     }
 
     if (ImGui::Button("play interpolation test"))
     {
-        
+
     }
 }
 
 void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
 {
     // 애니메이션 리스트 박스 폭 조정
-    _float listBoxWidth = 400.0f; // 원하는 리스트 박스 폭 설정
+    _float listBoxWidth = ImGui::GetContentRegionAvail().x; // 원하는 리스트 박스 폭 설정
 
     static _int iSelectSrcAnimIdx = 0;
     static _int iSelectDstAnimIdx = 0;
@@ -2246,16 +2304,16 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("src-anim");
+        ImGui::Text("Start clip");
         ImGui::SetNextItemWidth(listBoxWidth);
-        if (ImGui::BeginListBox("##Src(Start) Anim List"))
+        if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
             static _bool bSelectSrcAnimHighLighten = false;
 
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectSrcAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectSrcAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2267,25 +2325,25 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
             }
             ImGui::EndListBox();
         }
-        ImGui::SameLine();
+
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    ImGui::SameLine();
+
 
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("dst-anim");
+        ImGui::Text("End clip");
         ImGui::SetNextItemWidth(listBoxWidth);
-        if (ImGui::BeginListBox("##Dst(End) Anim List"))
+        if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
             static _bool bSelectSrcAnimHighLighten = false;
 
             for (_int i = 0; i < m_AnimNamesCStr.size(); i++)
             {
                 const _bool is_selected = (iSelectDstAnimIdx == i);
-                if (ImGui::Selectable(m_AnimNamesCStr[i], is_selected))
+                if (SelectAnimationClip(m_AnimNamesCStr[i], is_selected))
                     iSelectDstAnimIdx = i;
 
                 if (bSelectSrcAnimHighLighten && ImGui::IsItemHovered())
@@ -2299,11 +2357,11 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
             ImGui::EndListBox();
         }
 
-        ImGui::SameLine();
+
         ImGui::EndGroup(); // 그룹 종료
     }
 
-    // ImGui::SameLine();
+    //
 
     // 보간 거리, 속도를 XML 에서 로드한 데이터를 사용하는 경우, 직접 테스트 하는 경우
     {
@@ -2312,12 +2370,12 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
         ImGui::SetNextItemWidth(listBoxWidth);
 
         // 보간에 사용할 데이터 타입 : XML과 직접 설정한 데이터 중 고른다.
-        static const _char* pAnimPlayTestTypes[] = { "Use XML Data", "Use Custum Data"};
-        
+        static const _char* pAnimPlayTestTypes[] = { "Use XML Data", "Manual settings"};
+
         static _int iSelectedAnimPlayTestDataTypeIdx = 0;
         const _char* pComboSelectedAnimPlayTestDataTypeName = pAnimPlayTestTypes[iSelectedAnimPlayTestDataTypeIdx];
 
-        if (ImGui::BeginCombo("anim play test data type combo", pComboSelectedAnimPlayTestDataTypeName))
+        if (BeginToolCombo("Transition settings", pComboSelectedAnimPlayTestDataTypeName))
         {
             for (int n = 0; n < IM_ARRAYSIZE(pAnimPlayTestTypes); n++)
             {
@@ -2325,7 +2383,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
                 if (ImGui::Selectable(pAnimPlayTestTypes[n], is_selected))
                 {
                     iSelectedAnimPlayTestDataTypeIdx = n;
-                    
+
                     // XML 데이터 사용하는 경우
                     if (iSelectedAnimPlayTestDataTypeIdx == 0)
                     {
@@ -2355,18 +2413,18 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
         ImGui::EndGroup();
     }
 
-    if (ImGui::Button("play anim loop interpolation test"))
+    if (ImGui::Button("Play crossfade"))
     {
         m_bKeyDown_PlayDoubleAnimLoopInterpolationTest = true;
 
-        // 버튼이 눌렸다면 
+        // 버튼이 눌렸다면
         PlayAnimTest_StartBtn(iSelectSrcAnimIdx, iSelectDstAnimIdx, PartAnimObj_Type::ANIM_PLAY_TYPE::MULTI_INTERPOLATION);
     }
     else
     {
         m_bKeyDown_PlayDoubleAnimLoopInterpolationTest = false;
     }
-  
+
 
     Show_InterpolationInfo();
 }
@@ -2391,7 +2449,7 @@ void CLevel_AnimTool::Show_Interpolation_UseCustumData()
 
     ImGui::InputFloat("Custum Inter Dis Input", &fCustumInterDis, 0.01f);
     ImGui::DragFloat("Cumstum Inter Dis Drag", &fCustumInterDis, 0.01f, 0.01f, 5.f);
-    
+
     ImGui::InputFloat("Custum Inter SP Input", &fCustumInterSP, 0.01f);
     ImGui::DragFloat("Cumstum Inter SP Drag", &fCustumInterSP, 0.01f, 0.1f, 5.f);
 
@@ -2410,7 +2468,7 @@ void CLevel_AnimTool::Show_Interpolation_UseCustumData()
 
 void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Third()
 {
-
+    ImGui::TextWrapped("Three-clip transitions are not implemented in the original tool. Use Two clips.");
 }
 
 void CLevel_AnimTool::PlayAnimTest_StartBtn(_int iSrcAnimIdx, _int iDstAnimIdx, PartAnimObj_Type::ANIM_PLAY_TYPE eType)
@@ -2862,7 +2920,7 @@ HRESULT CLevel_AnimTool::XML_Save_InterpolationTableData(string strXMLFileName)
 //    static _int iSelectAnimPlayTypeIdx = 0;
 //    const _char* pComboSelectName = pAnimLoadDataType[iSelectAnimPlayTypeIdx];
 //
-//    if (ImGui::BeginCombo("Anim Load Type Combo", pComboSelectName))
+//    if (BeginToolCombo("Anim Load Type Combo", pComboSelectName))
 //    {
 //        for (int n = 0; n < IM_ARRAYSIZE(pAnimLoadDataType); n++)
 //        {
@@ -3373,11 +3431,12 @@ void CLevel_AnimTool::Show_Loop_Default_AnimPlayTest()
 {
     // Multi Default : 여러개의 애니매이션을 보간없이 연속 루프 재생하는 경우
 
-    ImGui::SeparatorText("Loop Default Test");
+    ImGui::SeparatorText("Sequence");
+    ImGui::TextWrapped("Plays clips in order without blending. For smooth transitions, choose Crossfade.");
 
     static _int iInterpolationTest = 0;
-    ImGui::RadioButton("double anim default play test", &iInterpolationTest, 0); ImGui::SameLine();
-    ImGui::RadioButton("third anim default play test", &iInterpolationTest, 1);
+    ImGui::RadioButton("Two clips", &iInterpolationTest, 0); ImGui::SameLine();
+    ImGui::RadioButton("Three clips", &iInterpolationTest, 1);
 
     if (iInterpolationTest == 0)
         Show_PlayAnimTest_MultiDefault_Second();    // 2개의 애니매이션을 보간없이 연속 재생
@@ -3397,8 +3456,8 @@ void CLevel_AnimTool::Show_Loop_Interpolation_AnimPlayTest()
     ImGui::SeparatorText("Loop Interpolation Test");
 
     static _int iInterpolationTest = 0;
-    ImGui::RadioButton("double anim interpolation play test", &iInterpolationTest, 0); ImGui::SameLine();
-    ImGui::RadioButton("third anim interpolation play test", &iInterpolationTest, 1);
+    ImGui::RadioButton("Two clips", &iInterpolationTest, 0); ImGui::SameLine();
+    ImGui::RadioButton("Three clips", &iInterpolationTest, 1);
 
     if (iInterpolationTest == 0)
         Show_PlayAnimTest_MultiInterpolation_Second();    // 2개의 애니매이션을 보간 연속 재생
@@ -4032,12 +4091,12 @@ void CLevel_AnimTool::Show_Loop_Blend_Interpolation()
     {
 
         // 보간에 사용할 데이터 타입 : XML과 직접 설정한 데이터 중 고른다.
-        static const _char* pAnimPlayTestTypes[] = { "Select", "Use Custum Data" };
+        static const _char* pAnimPlayTestTypes[] = { "Select", "Manual settings" };
 
         static _int iSelectedAnimPlayTestDataTypeIdx = 0;
         const _char* pComboSelectedAnimPlayTestDataTypeName = pAnimPlayTestTypes[iSelectedAnimPlayTestDataTypeIdx];
 
-        if (ImGui::BeginCombo("anim play test data type combo", pComboSelectedAnimPlayTestDataTypeName))
+        if (BeginToolCombo("Transition settings", pComboSelectedAnimPlayTestDataTypeName))
         {
             for (int n = 0; n < IM_ARRAYSIZE(pAnimPlayTestTypes); n++)
             {
@@ -5156,7 +5215,7 @@ HRESULT CLevel_AnimTool::XML_Load_Events(const WCHAR* strXMLFilePath)
 
 void CLevel_AnimTool::MultiControll_ModelMeshNames_TreeNode()
 {
-    if (ImGui::TreeNode("Multi-Controll-Model And Mesh"))
+    if (ImGui::TreeNode("Meshes"))
     {
         Show_MeshNames_ListBox();
         Show_LoadPartAnimModel_FBX_Radio();
@@ -5267,7 +5326,7 @@ void CLevel_AnimTool::TestGizmo()
 
 void CLevel_AnimTool::MultiControll_IK_TreeNode()
 {
-    if (ImGui::TreeNode("Multi-Controll-IK"))
+    if (ImGui::TreeNode("Inverse kinematics"))
     {
         Show_IK_Options();
 
@@ -5367,21 +5426,21 @@ void ShowAnimationSequencer()
 
 void CLevel_AnimTool::Begin_Animation_KeyFrame()
 {
-    _float fSX = ImGui_Get_ViewPort_StartPos().x;
-    _float fSY = ImGui_Get_ViewPort_StartPos().y;
-
-    _float fPaddingX = g_iMaxWidth / 2.f + 150.f;
-    _float fSizeY = 350.f;
-
-    // 창 위치 고정
-    ImGui_Fix_Window_Pos({ fSX + fPaddingX, fSY + g_iWinSizeY - fSizeY });
-
-    ImGui::Begin("Animation Time Line");
+    if (!m_pAT_PartAnimObj_Model || !m_pAT_PartAnimObj_Model->Get_CurAnim())
+    {
+        return;
+    }
+    const ImVec2 size = ImGui::GetMainViewport()->Size;
+    const float height = min(timelineHeight, size.y * 0.30f);
+    PlaceAnimationPanel(0.f, size.y - height, size.x, height);
+    ImGui::Begin("Timeline", nullptr, panelFlags);
 
     string strCurAnimName = m_pAT_PartAnimObj_Model->Get_CurAnim()->Get_AnimName();
     _int iCurAnimIdx = m_pAT_PartAnimObj_Model->Get_AnimIdx(strCurAnimName);
     CAnimation* pCurAnim = m_pAT_PartAnimObj_Model->Get_Anim(iCurAnimIdx);
     
+    ImGui::Text("%s | %.1f / %.1f ticks", strCurAnimName.c_str(), *pCurAnim->Get_TrackPos_Ptr(), pCurAnim->Get_AnimDuration());
+
     m_fCurAnimDuration = pCurAnim->Get_AnimDuration(); // 현재 재생 애니매이션 duration 설정
     m_pCurAnimTrackPos = pCurAnim->Get_TrackPos_Ptr(); // 현재 재생 애니매이션 trackpos
 
@@ -5466,6 +5525,12 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     m_fTimeLineWidth = ImGui::GetContentRegionAvail().x; // 프레임 전체 길이 (현재 창에서 사용가능한 너비를 구한다)
     ImVec2 vCursorPos = ImGui::GetCursorScreenPos(); // 현재 마우스 시작점 (아마 현재 창의 시작점을 의미하는듯 하다)
 
+    if (m_fCurAnimDuration <= 0.f)
+    {
+        ImGui::TextDisabled("Static pose (0 ticks)");
+        return;
+    }
+
     const _float fStartX = vCursorPos.x; // 타임 라인의 시작점 x
     const _float fEndX = vCursorPos.x + m_fTimeLineWidth; // 타임라인 끝점 x
     const _float fStartY = vCursorPos.y;
@@ -5481,7 +5546,7 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     _float fCurTrackPosBarPosX = Cal_TrackPosX(fStartX, *m_pCurAnimTrackPos, fFrameStep);
     _float fTrackPosBarSizeY = 35.f;
 
-    if (KEY_DOWN(KEY::SPACE))
+    if (KEY_DOWN(KEY::SPACE) && !ImGui::GetIO().WantTextInput)
         m_pAT_PartAnimObj->StopAndPlay_CurAnim();
 
     // TrackPosBar 컨트롤 
@@ -5495,27 +5560,20 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
 // fCurAnimDuration : 현재 애니매이션 시간(거리)
 _float CLevel_AnimTool::Draw_TimeLine(ImDrawList* pDrawList, _float fTimeLineWidth, ImVec2 vCursorPos, _float fCurAnimDuration)
 {
-    // 프레임을 기준으로 타임라인을 나누기 위한 스케일 계산
-    // 현재 창 사용가능한 너비를 애니매이션 재생 시간으로 나눈다. => 프레임 간 간 격이 나온다.
-    // 현재 애니매이션 duration을 framestep으로 나누어 | | | 이런 선들의 간격 padding을 구한다.
-    _float frameStep = fTimeLineWidth / (_float)fCurAnimDuration; 
-    _float fPadding = (_float)fCurAnimDuration / frameStep;
-
-    //// 타임라인 그리기 (0~fCurAnimDuration 프레임을 일정 간격으로 구분)
-    for (_int i = 0; i <= (_int)fCurAnimDuration; i++)
+    const _float frameStep = fTimeLineWidth / fCurAnimDuration;
+    const _int labelStep = ImMax(1, static_cast<_int>(ceilf(55.f / frameStep)));
+    for (_int frame = 0; frame <= static_cast<_int>(fCurAnimDuration); ++frame)
     {
-        _float x = vCursorPos.x + i * frameStep;  // 현재 프레임의 X 위치 계산
-        pDrawList->AddLine(ImVec2(x, vCursorPos.y),  // 시작점 (위쪽) 
-            ImVec2(x, vCursorPos.y + m_fFrameLineLen),  // 끝점 (아래쪽)
-            IM_COL32(255, 255, 255, 255)); // 흰색 선으로 표시
-
-        _float fTest = (x - m_fFrameLineStartX) / frameStep;
-        _float fTrackPos = (_float)i * fPadding;
-        ImGui::SetCursorScreenPos(ImVec2(x, vCursorPos.y + m_fFrameLineLen));
-        ImGui::Text("%.2f", fTest);
-
+        const float positionX = vCursorPos.x + frame * frameStep;
+        const bool major = frame % labelStep == 0;
+        pDrawList->AddLine(ImVec2(positionX, vCursorPos.y), ImVec2(positionX, vCursorPos.y + (major ? m_fFrameLineLen : 12.f)), IM_COL32(110, 125, 140, 255));
+        if (major)
+        {
+            char label[32];
+            sprintf_s(label, "%d", frame);
+            pDrawList->AddText(ImVec2(positionX, vCursorPos.y + m_fFrameLineLen + 3.f), IM_COL32(185, 198, 212, 255), label);
+        }
     }
-
     return frameStep;
 }
 
@@ -5608,7 +5666,7 @@ pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _f
     }
 
     // 키프레임 색상 선택 (드래그 중이면 초록색, 기본은 빨간색)
-    ImU32 keyframeColor = isDragging ? IM_COL32(0, 255, 0, 255) : IM_COL32(255, 0, 0, 255);
+    ImU32 keyframeColor = isDragging ? IM_COL32(145, 230, 240, 255) : IM_COL32(65, 185, 215, 255);
 
     // 키프레임 사각형 그리기
     pDrawList->AddRectFilled(keyframeMin, keyframeMax, keyframeColor);
@@ -6284,7 +6342,7 @@ void CLevel_AnimTool::Controll_Bone_Matrix(string strBoneName)
     static _int iSelBoneConType = 0;
     const _char* pSelBoneConTypeName = pBoneCombo[iSelBoneConType];
 
-    if (ImGui::BeginCombo("Select Bone Controll Type", pSelBoneConTypeName))
+    if (BeginToolCombo("Select Bone Controll Type", pSelBoneConTypeName))
     {
         for (int n = 0; n < IM_ARRAYSIZE(pBoneCombo); n++)
         {
@@ -6501,30 +6559,33 @@ void CLevel_AnimTool::Active_Ray_AtBone()
 
 void CLevel_AnimTool::Show_Selectable_AnimList_ListBox()
 {
-    if (!m_AnimNamesCStr.empty())
+    static ImGuiTextFilter filter;
+    filter.Draw("Search", -70.f);
+    ImGui::TextDisabled("%d clips", static_cast<int>(m_AnimNamesCStr.size()));
+    const float listHeight = ImMax(140.f, ImGui::GetContentRegionAvail().y - 140.f);
+    if (ImGui::BeginListBox("##AnimationClips", ImVec2(-FLT_MIN, listHeight)))
     {
-        ImGui::SeparatorText("Default Test");
-
-        if (ImGui::BeginListBox("Selectable Anim List", ImVec2(-FLT_MIN, 8 * ImGui::GetTextLineHeightWithSpacing())))
+        for (_int index = 0; index < static_cast<_int>(m_AnimNamesCStr.size()); ++index)
         {
-            for (_int i = 0; i < m_AnimNamesCStr.size(); ++i)
+            const char* fullName = m_AnimNamesCStr[index];
+            if (!filter.PassFilter(fullName))
             {
-                _bool IsSelected = (m_iCurAnimIdx == i);
-                string strFormat = "idx : " + to_string(i) + " | ";
-                string strRet = strFormat + m_AnimNamesCStr[i];
-
-                if (ImGui::Selectable(strRet.c_str(), IsSelected))
-                {
-                    PlayAnimTest_StartBtn(i, PartAnimObj_Type::ANIM_PLAY_TYPE::DEFAULT);
-                }
-
-                // 선택된 항목에 기본 포커스를 설정
-                if (IsSelected)
-                    ImGui::SetItemDefaultFocus();
+                continue;
             }
-
-            ImGui::EndListBox();
+            const char* separator = strrchr(fullName, '|');
+            const char* displayName = separator ? separator + 1 : fullName;
+            ImGui::PushID(index);
+            if (ImGui::Selectable(displayName, m_iCurAnimIdx == index))
+            {
+                PlayAnimTest_StartBtn(index, PartAnimObj_Type::ANIM_PLAY_TYPE::DEFAULT);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%d | %s", index, fullName);
+            }
+            ImGui::PopID();
         }
+        ImGui::EndListBox();
     }
 }
 
@@ -6533,7 +6594,7 @@ void CLevel_AnimTool::Show_PlayAnim_Btn(const _char* leftLabel, const _char* mid
     // 버튼 사이즈 계산
     _float windowWidth = ImGui::GetWindowWidth();
     _float padding = ImGui::GetStyle().ItemSpacing.x; // 버튼 간의 기본 간격
-    _float buttonWidth = (windowWidth - padding * 4) / 3; // 버튼 3개와 간격 계산
+    _float buttonWidth = (ImGui::GetContentRegionAvail().x - padding * 2) / 3; // 버튼 3개와 간격 계산
     ImVec2 _buttonSize(buttonWidth, 30.0f); // 버튼 높이는 30.0f로 설정
 
     // Left button
@@ -6548,11 +6609,8 @@ void CLevel_AnimTool::Show_PlayAnim_Btn(const _char* leftLabel, const _char* mid
 
     // Mid button (중앙에 배치)
     ImGui::SameLine();
-    if (ImGui::Button(midLabel, _buttonSize) || KEY_DOWN(KEY::SPACE))
+    if (ImGui::Button(midLabel, _buttonSize))
     {
-        m_pAT_PartAnimObj->StopAndPlay_CurAnim(); // 애니매이션 재생 멈춘다.
-
-        // 중앙 버튼이 눌렸을 때 실행될 코드
         m_pAT_PartAnimObj->StopAndPlay_CurAnim();
     }
 

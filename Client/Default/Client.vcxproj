@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -252,6 +252,24 @@
     <FxCompile Include="..\Bin\ShaderFiles\Shader_VtxPosTex.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\Shader_VtxRectInstance.hlsl" />
   </ItemGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\ThirdParty\TinyXml2;$(ProjectDir)..\..\Engine\Public;$(ProjectDir)..\..\Engine\Public\ImGui;$(ProjectDir)..\..\Engine\Public\ImGui\ImGuizmo;$(ProjectDir)..\..\Engine\Public\ImGui\ImNodes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\ThirdParty\TinyXml2\tinyxml2.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Engine\Default\Engine.vcxproj">
+      <Project>{FA872AED-9F1F-4848-8F7C-78CF765EE10B}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="CopyEngineRuntime" AfterTargets="Build">
+    <Copy SourceFiles="$(ProjectDir)..\..\Engine\Bin\Engine.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

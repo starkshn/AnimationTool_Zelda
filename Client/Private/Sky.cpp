@@ -2,6 +2,8 @@
 #include "..\Public\Sky.h"
 
 #include "GameInstance.h"
+#include "Shader.h"
+#include "VIBuffer_Cube.h"
 
 CSky::CSky(ID3D11Device * pDevice, ID3D11DeviceContext * pContext)
 	: CGameObject{ pDevice, pContext }
@@ -61,22 +63,9 @@ HRESULT CSky::Render()
 
 HRESULT CSky::Ready_Components()
 {
-	/* Com_Shader */
-	if (FAILED(Add_Component(LEVEL_GAMEPLAY, TEXT("Prototype_Component_Shader_VtxCube"),
-		TEXT("Com_Shader"), reinterpret_cast<CComponent**>(&m_pShaderCom))))
-		return E_FAIL;
-
-	/* Com_VIBuffer */
-	if (FAILED(Add_Component(LEVEL_GAMEPLAY, TEXT("Prototype_Component_VIBuffer_Cube"),
-		TEXT("Com_VIBuffer"), reinterpret_cast<CComponent**>(&m_pVIBufferCom))))
-		return E_FAIL;
-
-	/* Com_Texture */
-	if (FAILED(Add_Component(LEVEL_GAMEPLAY, TEXT("Prototype_Component_Texture_Sky"),
-		TEXT("Com_Texture"), reinterpret_cast<CComponent**>(&m_pTextureCom))))
-		return E_FAIL;
-
-	return S_OK;
+    m_pShaderCom = CShader::Create(m_pDevice, m_pContext, TEXT("../Bin/ShaderFiles/Shader_PreviewSky.hlsl"), VTXCUBE::Elements, VTXCUBE::iNumElements);
+    m_pVIBufferCom = CVIBuffer_Cube::Create(m_pDevice, m_pContext);
+    return m_pShaderCom && m_pVIBufferCom ? S_OK : E_FAIL;
 }
 
 HRESULT CSky::Bind_ShaderResources()
@@ -90,8 +79,6 @@ HRESULT CSky::Bind_ShaderResources()
 
 
 
-	if (FAILED(m_pTextureCom->Bind_ShaderResource(m_pShaderCom, "g_Texture", 3)))
-		return E_FAIL;
 
 	return S_OK;
 }
@@ -127,6 +114,5 @@ void CSky::Free()
 	__super::Free();
 	
 	Safe_Release(m_pShaderCom);
-	Safe_Release(m_pTextureCom);
 	Safe_Release(m_pVIBufferCom);
 }

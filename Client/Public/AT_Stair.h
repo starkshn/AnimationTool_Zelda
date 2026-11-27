@@ -19,6 +19,9 @@ private:
 	virtual ~CAT_Stair() override = default;
 
 public:
+    inline static bool showPreviewEnvironment = false;
+
+public:
 	virtual HRESULT			Initialize_Prototype() override;
 	virtual HRESULT			Initialize(void* pArg) override;
 	virtual void			Priority_Update(_float fTimeDelta) override;

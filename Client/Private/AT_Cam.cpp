@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "AT_Cam.h"
 #include "GameInstance.h"
+#include "imgui.h"
 
 CAnimTool_Camera::CAnimTool_Camera(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
     :
@@ -33,73 +34,31 @@ HRESULT CAnimTool_Camera::Initialize(void* pArg)
 
 void CAnimTool_Camera::Priority_Update(_float fTimeDelta)
 {
-
-	if (KEY_DOWN(KEY::TAB))
-	{
-		m_bBlockCamMove == false ? m_bBlockCamMove = true : m_bBlockCamMove = false;
-	}
-
-	if (KEY_PRESSING(KEY::W))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Straight(fTimeDelta);
-	}
-
-	if (KEY_PRESSING(KEY::S))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Backward(fTimeDelta);
-	}
-
-	if (KEY_PRESSING(KEY::A))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Left(fTimeDelta);
-	}
-
-	if (KEY_PRESSING(KEY::D))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Right(fTimeDelta);
-	}
-
-	if (KEY_PRESSING(KEY::E))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Up(fTimeDelta);
-	}
-
-	if (KEY_PRESSING(KEY::Q))
-	{
-		if (m_bBlockCamMove) return;
-
-		m_pTransformCom->Go_Down(fTimeDelta);
-	}
-
-	_long MouseMove = {};
-
-	if (MouseMove = MOUSE_MOVE(MOUSE_MOVE::X))
-	{
-		if (m_bBlockCamMove) 
-			return;
-
-		m_pTransformCom->Turn(XMVectorSet(0.f, 1.f, 0.f, 0.f), MouseMove * fTimeDelta * m_fMouseSensor);
-	}
-
-	if (MouseMove = MOUSE_MOVE(MOUSE_MOVE::Y))
-	{
-		if (m_bBlockCamMove) 
-			return;
-
-		m_pTransformCom->Turn(Get_Transform()->Get_State(CTransform::STATE_RIGHT), MouseMove * fTimeDelta * m_fMouseSensor);
-	}
-
-
+    RECT clientArea{};
+    GetClientRect(g_hWnd, &clientArea);
+    if (clientArea.right > 0 && clientArea.bottom > 0)
+    {
+        m_fAspect = static_cast<float>(clientArea.right) / clientArea.bottom;
+    }
+    const bool active = GetForegroundWindow() == g_hWnd;
+    const bool captureKeyboard = ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard;
+    const bool captureMouse = ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse;
+    if (active && !captureKeyboard)
+    {
+        if (KEY_PRESSING(KEY::W)) { m_pTransformCom->Go_Straight(fTimeDelta); }
+        if (KEY_PRESSING(KEY::S)) { m_pTransformCom->Go_Backward(fTimeDelta); }
+        if (KEY_PRESSING(KEY::A)) { m_pTransformCom->Go_Left(fTimeDelta); }
+        if (KEY_PRESSING(KEY::D)) { m_pTransformCom->Go_Right(fTimeDelta); }
+        if (KEY_PRESSING(KEY::Q)) { m_pTransformCom->Go_Down(fTimeDelta); }
+        if (KEY_PRESSING(KEY::E)) { m_pTransformCom->Go_Up(fTimeDelta); }
+    }
+    if (active && !captureMouse && (GetAsyncKeyState(VK_RBUTTON) & 0x8000))
+    {
+        const _long mouseX = MOUSE_MOVE(MOUSE_MOVE::X);
+        const _long mouseY = MOUSE_MOVE(MOUSE_MOVE::Y);
+        m_pTransformCom->Turn(XMVectorSet(0.f, 1.f, 0.f, 0.f), mouseX * fTimeDelta * m_fMouseSensor);
+        m_pTransformCom->Turn(Get_Transform()->Get_State(CTransform::STATE_RIGHT), mouseY * fTimeDelta * m_fMouseSensor);
+    }
     __super::Compute_PipeLineMatrices();
 }
 

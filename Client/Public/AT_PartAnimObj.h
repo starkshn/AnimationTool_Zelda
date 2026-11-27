@@ -44,6 +44,16 @@ public:
 	virtual HRESULT Render() override;
 	virtual HRESULT Render_Shadow() override;
 
+public:
+    HRESULT Load_DefaultHead();
+    bool Has_DefaultHead() const { return m_pHeadModel != nullptr; }
+    bool m_bShowDefaultHead = true;
+
+private:
+    CModel* m_pHeadModel = nullptr;
+    vector<class Engine::CBone*> m_HeadSourceBones;
+    HRESULT Render_DefaultHead();
+
 private:
 	void Update_AnimLoop_Default(_float fTimeDelta);
 

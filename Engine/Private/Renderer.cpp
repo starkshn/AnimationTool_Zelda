@@ -157,8 +157,8 @@ HRESULT CRenderer::Draw_RenderObject()
 
 HRESULT CRenderer::Render_Priority()
 {
-	if (FAILED(m_pGameInstance->Begin_MRT(TEXT("MRT_Final"))))
-		return E_FAIL;
+	// Final composition draws directly to the back buffer and discards empty pixels.
+	// Draw the sky there first so those pixels retain the preview background.
 
 	for (auto& pRenderObject : m_RenderObjects[RG_PRIORITY])
 	{
@@ -169,8 +169,7 @@ HRESULT CRenderer::Render_Priority()
 	}
 	m_RenderObjects[RG_PRIORITY].clear();
 
-	if (FAILED(m_pGameInstance->End_MRT()))
-		return E_FAIL;
+
 
 	return S_OK;
 }

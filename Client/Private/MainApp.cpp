@@ -56,7 +56,7 @@ HRESULT CMainApp::Render()
 	if (nullptr == m_pGameInstance)
 		return E_FAIL;
 	
-	if (FAILED(m_pGameInstance->Render_Begin({ 0.5f, 0.5f, 0.5f, 1.f })))
+	if (FAILED(m_pGameInstance->Render_Begin({ 0.13f, 0.16f, 0.20f, 1.f })))
 		return E_FAIL;
 
 	m_pGameInstance->Draw();

@@ -45,6 +45,10 @@ void CAT_Terrain::Update(_float fTimeDelta)
 
 void CAT_Terrain::Late_Update(_float fTimeDelta)
 {
+    if (!showPreviewEnvironment)
+    {
+        return;
+    }
     m_pGameInstance->Add_RenderObject(CRenderer::RG_NONBLEND, this);
 }
 

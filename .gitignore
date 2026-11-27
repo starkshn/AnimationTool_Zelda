@@ -41,3 +41,6 @@
 *.cso
 *.recipe
 .vs/
+# Visual Studio intermediate state
+*.res
+*.lastbuildstate
