@@ -22,6 +22,22 @@
 namespace fs = std::filesystem;
 using namespace std;
 
+static fs::path ToolDataDirectory()
+{
+    WCHAR executable[MAX_PATH]{};
+    GetModuleFileNameW(nullptr, executable, MAX_PATH);
+    return fs::path(executable).parent_path() / L"DataFiles";
+}
+
+static fs::path DefaultEventFile()
+{
+    return ToolDataDirectory() / L"AnimationEvents" / L"Link.xml";
+}
+
+static std::string eventFileStatus = "";
+
+
+
 // 각 아이콘의 색상과 설명
 struct IconInfo
 {
@@ -131,6 +147,11 @@ HRESULT CLevel_AnimTool::Initialize()
     if (FAILED(m_pAT_PartAnimObj->Load_DefaultHead()))
     {
         return E_FAIL;
+    }
+
+    if (FAILED(XML_Load_Events(DefaultEventFile().c_str())))
+    {
+        eventFileStatus = "Default events could not be loaded.";
     }
 
 	return S_OK;
@@ -339,7 +360,7 @@ namespace
     bool showAnimationLog = false;
     bool showTransformGizmo = false;
     constexpr float menuHeight = 36.f;
-    constexpr float timelineHeight = 250.f;
+    constexpr float timelineHeight = 330.f;
     constexpr float panelWidth = 350.f;
     constexpr ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
 
@@ -385,17 +406,17 @@ void CLevel_AnimTool::Render_Menu()
     {
         ImGui::TextUnformatted("ANIMATION TOOL");
         ImGui::Separator();
-        if (ImGui::BeginMenu("Load"))
+        if (ImGui::BeginMenu(u8"\ubd88\ub7ec\uc624\uae30"))
         {
             Show_OpenItems_MenuItem();
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Save"))
+        if (ImGui::BeginMenu(u8"\uc800\uc7a5"))
         {
             Show_OpenItems_Saves();
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("View"))
+        if (ImGui::BeginMenu(u8"\ubcf4\uae30"))
         {
 
             ImGui::MenuItem("IK stairs", nullptr, &CAT_Stair::showPreviewEnvironment);
@@ -414,9 +435,9 @@ void CLevel_AnimTool::Render_ShowObjectInfo()
 {
     const ImVec2 size = ImGui::GetMainViewport()->Size;
     const float panelWidth = min(350.f, size.x * 0.28f);
-    const float sideHeight = max(80.f, size.y - menuHeight - min(timelineHeight, size.y * 0.30f));
+    const float sideHeight = max(80.f, size.y - menuHeight - min(timelineHeight, size.y * 0.40f));
     PlaceAnimationPanel(0.f, menuHeight, panelWidth, sideHeight);
-    ImGui::Begin("Animation", nullptr, panelFlags);
+    ImGui::Begin(u8"\uc560\ub2c8\uba54\uc774\uc158", nullptr, panelFlags);
     if (m_pAT_PartAnimObj_Model && m_pAT_PartAnimObj_Model->Get_ModelType() == Engine::MODEL_TYPE::TYPE_ANIM)
     {
         m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_PLAY_TYPE] = Show_AnimPlayType_ComboBox();
@@ -424,22 +445,22 @@ void CLevel_AnimTool::Render_ShowObjectInfo()
     ImGui::End();
 
     PlaceAnimationPanel(size.x - panelWidth, menuHeight, panelWidth, sideHeight);
-    ImGui::Begin("Inspector", nullptr, panelFlags);
-    if (ImGui::CollapsingHeader("Animation details"))
+    ImGui::Begin(u8"\uc0c1\uc138 \uc124\uc815", nullptr, panelFlags);
+    if (ImGui::CollapsingHeader(u8"\uc560\ub2c8\uba54\uc774\uc158 \uc815\ubcf4"))
     {
         m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIMINFO_TEXT] = Show_AnimInfo_Text(m_iCurAnimIdx);
     }
     if (m_pAT_PartAnimObj->Has_DefaultHead())
     {
-        ImGui::Checkbox("Link hood / hair", &m_pAT_PartAnimObj->m_bShowDefaultHead);
+        ImGui::Checkbox(u8"\ub9c1\ud06c \ud6c4\ub4dc / \uba38\ub9ac\uce74\ub77d", &m_pAT_PartAnimObj->m_bShowDefaultHead);
         ImGui::Separator();
     }
     MultiControll_Transform_TreeNode();
-    if (ImGui::CollapsingHeader("Root motion"))
+    if (ImGui::CollapsingHeader(u8"\ub8e8\ud2b8 \ubaa8\uc158"))
     {
         m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_ROOT_MOTION_PLAY] = Show_AnimRootMotionType_RadioBtn();
     }
-    if (ImGui::CollapsingHeader("Transitions / Keyframes"))
+    if (ImGui::CollapsingHeader(u8"\uc804\ud658 / \ud0a4\ud504\ub808\uc784"))
     {
         m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_INTERPOLATION] = Show_InterpolationTable();
         m_bMultiControllsAnimation[AT_MC_ANIMATION_TYPE::ANIM_KEYFRAME] = Show_Anim_KeyFrames();
@@ -487,7 +508,7 @@ _bool CLevel_AnimTool::Open_Modal(string strEx, WCHAR* pRetPath)
     }
     else if (strEx == "xml")
     {
-        m_ofn.lpstrFilter = L"FBX Files (*.xml)\0*.xml\0All Files (*.*)\0*.*\0\0";
+        m_ofn.lpstrFilter = L"XML Files (*.xml)\0*.xml\0All Files (*.*)\0*.*\0\0";
     }
     else
     {
@@ -495,13 +516,14 @@ _bool CLevel_AnimTool::Open_Modal(string strEx, WCHAR* pRetPath)
         m_ofn.lpstrFilter = L"All Files (*.*)\0*.*\0\0";
     }
 
-    m_ofn.lpstrDefExt = std::wstring(strEx.begin(), strEx.end()).c_str(); // 기본 확장자 설정
+    const std::wstring dialogExtension(strEx.begin(), strEx.end());
+    m_ofn.lpstrDefExt = dialogExtension.c_str(); // 기본 확장자 설정
 
     WCHAR strPath[256] = L"../Bin/Resources/Models/";
 
     // 상대 경로를 절대 경로로 변환
     fs::path relativePath(strPath);
-    fs::path absolutePath = fs::absolute(relativePath);
+    fs::path absolutePath = strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
 
     // 절대 경로를 WCHAR 배열로 변환하여 초기 디렉토리에 설정
     _wstring strInitDir = absolutePath.wstring();
@@ -548,7 +570,8 @@ _bool CLevel_AnimTool::Open_Modal_Window(const WCHAR* strOpenPath, string strEx,
     m_ofn.nFilterIndex = 1;          // 기본 필터 인덱스
     m_ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;       // 파일 존재 조건
     m_ofn.lpstrFilter = L"fbx Files (*.fbx)\0*.fbx\0\0";  // 파일 필터
-    m_ofn.lpstrDefExt = std::wstring(strEx.begin(), strEx.end()).c_str(); // 기본 확장자 설정
+    const std::wstring dialogExtension(strEx.begin(), strEx.end());
+    m_ofn.lpstrDefExt = dialogExtension.c_str(); // 기본 확장자 설정
 
     // 확장자에 따른 필터 설정
     if (strEx == "fbx")
@@ -563,7 +586,7 @@ _bool CLevel_AnimTool::Open_Modal_Window(const WCHAR* strOpenPath, string strEx,
 
     // 상대 경로를 절대 경로로 변환
     fs::path relativePath(strPath);
-    fs::path absolutePath = fs::absolute(relativePath);
+    fs::path absolutePath = strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
 
     // 절대 경로를 WCHAR 배열로 변환하여 초기 디렉토리에 설정
     _wstring strInitDir = absolutePath.wstring();
@@ -624,13 +647,14 @@ _bool CLevel_AnimTool::Open_Save_Modal(string strEx, WCHAR* pRetPath)
         m_ofn.lpstrFilter = L"All Files (*.*)\0*.*\0\0";
     }
 
-    m_ofn.lpstrDefExt = std::wstring(strEx.begin(), strEx.end()).c_str(); // 기본 확장자 설정
+    const std::wstring dialogExtension(strEx.begin(), strEx.end());
+    m_ofn.lpstrDefExt = dialogExtension.c_str(); // 기본 확장자 설정
 
     WCHAR strPath[256] = L"../Bin/Resources/Models/";
 
     // 상대 경로를 절대 경로로 변환
     fs::path relativePath(strPath);
-    fs::path absolutePath = fs::absolute(relativePath);
+    fs::path absolutePath = strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
 
     // 절대 경로를 WCHAR 배열로 변환하여 초기 디렉토리에 설정
     _wstring strInitDir = absolutePath.wstring();
@@ -1560,7 +1584,7 @@ HRESULT CLevel_AnimTool::Load_NonAnimModel_FBX_File(WCHAR* strFBXModelFilePath)
 
 void CLevel_AnimTool::MultiControll_Transform_TreeNode()
 {
-    if (ImGui::TreeNode("Transform"))
+    if (ImGui::TreeNode(u8"\uc704\uce58 / \ud68c\uc804 / \ud06c\uae30"))
     {
         auto pCom = m_pAT_Obj->Get_Transform();
         if (pCom)
@@ -1606,7 +1630,7 @@ void CLevel_AnimTool::MultiControll_Bone()
 {
     // static _bool bOpend = false;
 
-    if (ImGui::TreeNode("Skeleton"))
+    if (ImGui::TreeNode(u8"\ubf08\ub300"))
     {
         // 뼈 전체 정보 로드하는 버튼
         m_bMultiControllsBone[AT_MC_BONE_TYPE::LOAD_BONE_DATA_BTN] = Show_LoadBoneData_Btn();
@@ -1874,11 +1898,11 @@ _bool CLevel_AnimTool::Show_AnimRootMotionType_RadioBtn()
 
 _bool CLevel_AnimTool::Show_AnimPlayType_ComboBox()
 {
-    static const _char* pAnimPlayTestTypes[] = { "Single clip", "Sequence (no blend)", "Crossfade", "Body blending" };
+    static const _char* pAnimPlayTestTypes[] = { u8"\ub2e8\uc77c \uc7ac\uc0dd", u8"\uc21c\ucc28 \uc7ac\uc0dd (\ubcf4\uac04 \uc5c6\uc74c)", u8"\ud074\ub9bd \uc804\ud658 \ubcf4\uac04", u8"\ubd80\uc704\ubcc4 \ube14\ub80c\ub529" };
     static _int iSelectedAnimPlayTestTypeIdx = 0;
     const _char* pComboSelectedAnimPlaytestTypeName = pAnimPlayTestTypes[iSelectedAnimPlayTestTypeIdx];
 
-    if (BeginToolCombo("Mode", pComboSelectedAnimPlaytestTypeName))
+    if (BeginToolCombo(u8"\uc7ac\uc0dd \ubc29\uc2dd", pComboSelectedAnimPlaytestTypeName))
     {
         for (int n = 0; n < IM_ARRAYSIZE(pAnimPlayTestTypes); n++)
         {
@@ -2114,7 +2138,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("Start clip");
+        ImGui::Text(u8"\uc2dc\uc791 \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, listBoxHeight)))
         {
@@ -2144,7 +2168,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Second()
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("End clip");
+        ImGui::Text(u8"\ub05d \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, listBoxHeight)))
         {
@@ -2193,7 +2217,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("Start clip");
+        ImGui::Text(u8"\uc2dc\uc791 \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
@@ -2225,7 +2249,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
     // 중간 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("Middle clip");
+        ImGui::Text(u8"\uc911\uac04 \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Mid Anim List", ImVec2(listBoxWidth, 140.f)))
         {
@@ -2258,7 +2282,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiDefault_Third()
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("End clip");
+        ImGui::Text(u8"\ub05d \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
@@ -2304,7 +2328,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
 
-        ImGui::Text("Start clip");
+        ImGui::Text(u8"\uc2dc\uc791 \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Src(Start) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
@@ -2334,7 +2358,7 @@ void CLevel_AnimTool::Show_PlayAnimTest_MultiInterpolation_Second()
     // 끝날 애니매이션
     {
         ImGui::BeginGroup(); // 그룹 시작 (가로 배치를 위한 그룹)
-        ImGui::Text("End clip");
+        ImGui::Text(u8"\ub05d \ud074\ub9bd");
         ImGui::SetNextItemWidth(listBoxWidth);
         if (ImGui::BeginListBox("##Dst(End) Anim List", ImVec2(listBoxWidth, 140.f)))
         {
@@ -5133,89 +5157,69 @@ HRESULT CLevel_AnimTool::XML_Save_Events(const WCHAR* strXMLFilePath)
         }
     }
 
-    pDoc->SaveFile(CONVERTTOSTRING(strXMLFilePath).c_str());
+    FILE* file = nullptr;
+    if (_wfopen_s(&file, strXMLFilePath, L"wb") != 0 || !file)
+    {
+        delete pDoc;
+        return E_FAIL;
+    }
+    const auto result = pDoc->SaveFile(file);
+    const int closeResult = fclose(file);
     delete pDoc;
-    pDoc = nullptr;
+    if (result != xml::XML_SUCCESS || closeResult != 0) { return E_FAIL; }
+    eventFileStatus = fs::path(strXMLFilePath).filename().u8string();
     return S_OK;
 }
 
 HRESULT CLevel_AnimTool::XML_Load_Events(const WCHAR* strXMLFilePath)
 {
-    xml::XMLDocument doc;
-    if (doc.LoadFile(CONVERTTOSTRING(strXMLFilePath).c_str()) != xml::XML_SUCCESS)
-        return E_FAIL;
-
-    xml::XMLElement* pRoot = doc.FirstChildElement("AnimationEvent");
-    if (!pRoot)
-        return E_FAIL;
-
-    _int iNumAnim{};
-    pRoot->QueryAttribute("NumAnim", &iNumAnim);
-
-    xml::XMLElement* pAnimEle = pRoot->FirstChildElement();
-    if (!pAnimEle)
-        return E_FAIL;
-
-    for (_int i = 0; i < iNumAnim; ++i)
+    FILE* file = nullptr;
+    if (_wfopen_s(&file, strXMLFilePath, L"rb") != 0 || !file)
     {
-        const _char* pAnimName = nullptr;
-        pAnimEle->QueryAttribute("Name", &pAnimName);
-        if (!pAnimName)
-            return E_FAIL;
-
-        string strAnimName = pAnimName;
-        _int iNumLayer{};
-        pAnimEle->QueryIntAttribute("NumLayer", &iNumLayer);
-        
-        xml::XMLElement* pLayerEle = pAnimEle->FirstChildElement();
-        if (!pLayerEle)
-            return E_FAIL;
-
-        for (_int j = 0; j < iNumLayer; ++j)
-        {
-            const _char* pLayerName = nullptr;
-            pLayerEle->QueryAttribute("Name", &pLayerName);
-            if (!pLayerName)
-                return E_FAIL;
-
-            string strLayerName = pLayerName;
-            _int iNumEvent;
-            pLayerEle->QueryIntAttribute("NumEvent", &iNumEvent);
-            
-            xml::XMLElement* pEventEle = pLayerEle->FirstChildElement();
-            if (!pEventEle)
-                return E_FAIL;
-
-            for (_int k = 0; k < iNumEvent; ++k)
-            {
-                const _char* pEventName = nullptr;
-                pEventEle->QueryAttribute("Name", &pEventName);
-                if (!pEventName)
-                    return E_FAIL;
-                
-                string strEventName = pEventName;
-                _float fTrackPos{};
-                pEventEle->QueryFloatAttribute("TrackPos", &fTrackPos);
-
-                m_Events[strAnimName][strLayerName].emplace_back(strEventName, fTrackPos);
-                
-                pEventEle = pEventEle->NextSiblingElement();
-            }
-
-            pLayerEle = pLayerEle->NextSiblingElement();
-
-        }
-        
-        pAnimEle = pAnimEle->NextSiblingElement();
+        return E_FAIL;
     }
-
+    xml::XMLDocument document;
+    const auto result = document.LoadFile(file);
+    fclose(file);
+    if (result != xml::XML_SUCCESS)
+    {
+        return E_FAIL;
+    }
+    const auto* root = document.FirstChildElement("AnimationEvent");
+    if (!root)
+    {
+        return E_FAIL;
+    }
+    decltype(m_Events) loadedEvents;
+    for (const auto* animation = root->FirstChildElement("Animation"); animation; animation = animation->NextSiblingElement("Animation"))
+    {
+        const char* animationName = animation->Attribute("Name");
+        if (!animationName) { return E_FAIL; }
+        for (const auto* layer = animation->FirstChildElement("Layer"); layer; layer = layer->NextSiblingElement("Layer"))
+        {
+            const char* layerName = layer->Attribute("Name");
+            if (!layerName) { return E_FAIL; }
+            for (const auto* event = layer->FirstChildElement("Event"); event; event = event->NextSiblingElement("Event"))
+            {
+                const char* eventName = event->Attribute("Name");
+                float trackPosition = 0.f;
+                if (!eventName || event->QueryFloatAttribute("TrackPos", &trackPosition) != xml::XML_SUCCESS || !std::isfinite(trackPosition) || trackPosition < 0.f)
+                {
+                    return E_FAIL;
+                }
+                loadedEvents[animationName][layerName].emplace_back(eventName, trackPosition);
+            }
+        }
+    }
+    m_Events.swap(loadedEvents);
+    eventFileStatus = fs::path(strXMLFilePath).filename().u8string();
     return S_OK;
 }
 
 
 void CLevel_AnimTool::MultiControll_ModelMeshNames_TreeNode()
 {
-    if (ImGui::TreeNode("Meshes"))
+    if (ImGui::TreeNode(u8"\uba54\uc2dc"))
     {
         Show_MeshNames_ListBox();
         Show_LoadPartAnimModel_FBX_Radio();
@@ -5326,7 +5330,7 @@ void CLevel_AnimTool::TestGizmo()
 
 void CLevel_AnimTool::MultiControll_IK_TreeNode()
 {
-    if (ImGui::TreeNode("Inverse kinematics"))
+    if (ImGui::TreeNode(u8"\uc5ed\uc6b4\ub3d9\ud559 (IK)"))
     {
         Show_IK_Options();
 
@@ -5361,7 +5365,7 @@ void ShowAnimationSequencer()
     ImGui::Begin("Animation Sequencer");
 
     // 타임라인 제목 출력
-    ImGui::Text("Timeline");
+    ImGui::Text(u8"\ud0c0\uc784\ub77c\uc778");
 
     // 구분선 추가 (시각적으로 영역을 나눔)
     ImGui::Separator();
@@ -5431,9 +5435,9 @@ void CLevel_AnimTool::Begin_Animation_KeyFrame()
         return;
     }
     const ImVec2 size = ImGui::GetMainViewport()->Size;
-    const float height = min(timelineHeight, size.y * 0.30f);
+    const float height = min(timelineHeight, size.y * 0.40f);
     PlaceAnimationPanel(0.f, size.y - height, size.x, height);
-    ImGui::Begin("Timeline", nullptr, panelFlags);
+    ImGui::Begin(u8"\ud0c0\uc784\ub77c\uc778", nullptr, panelFlags);
 
     string strCurAnimName = m_pAT_PartAnimObj_Model->Get_CurAnim()->Get_AnimName();
     _int iCurAnimIdx = m_pAT_PartAnimObj_Model->Get_AnimIdx(strCurAnimName);
@@ -5453,8 +5457,15 @@ void CLevel_AnimTool::Begin_Animation_KeyFrame()
 // save, load, clear 버튼이 있고, 키프레임들을 그린다. (직사각형을 그리고 그 안에 | 하얀 선들을 그리는 기능들의 함수들을 호출한다.)
 void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
 {
+    if (ImGui::Button(u8"\uae30\ubcf8 \ub9c1\ud06c \uc774\ubca4\ud2b8 \ubd88\ub7ec\uc624\uae30"))
+    {
+        if (FAILED(XML_Load_Events(DefaultEventFile().c_str()))) { eventFileStatus = "Load failed; current events retained."; }
+    }
+    ImGui::SameLine();
+    ImGui::TextUnformatted(eventFileStatus.c_str());
+
     // XML 저장 함수
-    if (ImGui::Button("Save Events To XML"))
+    if (ImGui::Button(u8"\uc774\ubca4\ud2b8 \ub2e4\ub978 \uc774\ub984\uc73c\ub85c \uc800\uc7a5"))
     {
         if (!m_Events.empty())
         {
@@ -5479,11 +5490,8 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     ImGui::SameLine();
 
     // XML 로드 함수
-    if (ImGui::Button("Load Events From XML"))
+    if (ImGui::Button(u8"\uc774\ubca4\ud2b8 XML \ubd88\ub7ec\uc624\uae30"))
     {
-        if (!m_Events.empty())
-            m_Events.clear();
-
         WCHAR strFilePath[256];
         if (Open_Modal("xml", strFilePath))
         {
@@ -5502,7 +5510,7 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Clear All Events"))
+    if (ImGui::Button(u8"\uc804\uccb4 \uc774\ubca4\ud2b8 \ube44\uc6b0\uae30"))
     {
         if (!m_Events.empty())
         {
@@ -5514,7 +5522,7 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     ImGui::Separator();
 
     // 타임라인 제목 출력
-    ImGui::Text("Timeline");
+    ImGui::Text(u8"\ud0c0\uc784\ub77c\uc778");
 
     // 구분선 추가 (시각적으로 영역을 나눔)
     ImGui::Separator();
@@ -5836,7 +5844,7 @@ void CLevel_AnimTool::Draw_Events(_float fFrameLineStartStartX, _float fFrameLin
             _float fCurStartY = fCurStartPosY;
 
             ImGui::SetCursorScreenPos(ImVec2(vCursorPos.x, fCurStartY));
-            ImGui::Text(strLayerName.c_str());
+            ImGui::TextUnformatted(strLayerName.c_str());
 
             // 구분선을 아래에 배치
             ImGui::SetCursorScreenPos(ImVec2(vCursorPos.x, fCurStartY + 10.f));
@@ -5847,6 +5855,8 @@ void CLevel_AnimTool::Draw_Events(_float fFrameLineStartStartX, _float fFrameLin
             _float fFrameStep = Draw_TimeLine(pDrawList, m_fTimeLineWidth, vCursorPos, m_fCurAnimDuration);
 
             Draw_Event(pDrawList, strAnimName, strLayerName, vCursorPos.y, fFrameStep);
+            ImGui::SetCursorScreenPos(ImVec2(vCursorPos.x, vCursorPos.y + m_fFrameLineLen + 24.f));
+            ImGui::Dummy(ImVec2(1.f, 1.f));
         }
     }
 }
@@ -6557,15 +6567,43 @@ void CLevel_AnimTool::Active_Ray_AtBone()
 }
 
 
+std::vector<int> CLevel_AnimTool::Get_AnimationDisplayOrder() const
+{
+    auto countEvents = [&](int index)
+    {
+        int count = 0;
+        const auto found = m_Events.find(m_AnimNamesCStr[index]);
+        if (found != m_Events.end())
+        {
+            for (const auto& layer : found->second) { count += static_cast<int>(layer.second.size()); }
+        }
+        return count;
+    };
+    auto priority = [&](int index)
+    {
+        const std::string name = m_AnimNamesCStr[index];
+        if (name == "Armature|Nml_Wait") { return 0; }
+        if (name.find("Face_") != std::string::npos) { return 4; }
+        if (countEvents(index) > 0) { return 1; }
+        if (name.find("Attack") != std::string::npos) { return 2; }
+        return 3;
+    };
+    std::vector<int> displayOrder;
+    for (int index = 0; index < static_cast<int>(m_AnimNamesCStr.size()); ++index) { displayOrder.push_back(index); }
+    std::stable_sort(displayOrder.begin(), displayOrder.end(), [&](int left, int right) { return priority(left) < priority(right); });
+    return displayOrder;
+}
+
 void CLevel_AnimTool::Show_Selectable_AnimList_ListBox()
 {
     static ImGuiTextFilter filter;
-    filter.Draw("Search", -70.f);
+    filter.Draw(u8"\uac80\uc0c9", -70.f);
     ImGui::TextDisabled("%d clips", static_cast<int>(m_AnimNamesCStr.size()));
+    const auto displayOrder = Get_AnimationDisplayOrder();
     const float listHeight = ImMax(140.f, ImGui::GetContentRegionAvail().y - 140.f);
     if (ImGui::BeginListBox("##AnimationClips", ImVec2(-FLT_MIN, listHeight)))
     {
-        for (_int index = 0; index < static_cast<_int>(m_AnimNamesCStr.size()); ++index)
+        for (const int index : displayOrder)
         {
             const char* fullName = m_AnimNamesCStr[index];
             if (!filter.PassFilter(fullName))
@@ -6575,7 +6613,15 @@ void CLevel_AnimTool::Show_Selectable_AnimList_ListBox()
             const char* separator = strrchr(fullName, '|');
             const char* displayName = separator ? separator + 1 : fullName;
             ImGui::PushID(index);
-            if (ImGui::Selectable(displayName, m_iCurAnimIdx == index))
+            std::string label = displayName;
+            int eventCount = 0;
+            const auto events = m_Events.find(fullName);
+            if (events != m_Events.end())
+            {
+                for (const auto& layer : events->second) { eventCount += static_cast<int>(layer.second.size()); }
+            }
+            if (eventCount > 0) { label += " [Events: " + std::to_string(eventCount) + "]"; }
+            if (ImGui::Selectable(label.c_str(), m_iCurAnimIdx == index))
             {
                 PlayAnimTest_StartBtn(index, PartAnimObj_Type::ANIM_PLAY_TYPE::DEFAULT);
             }
@@ -6601,10 +6647,10 @@ void CLevel_AnimTool::Show_PlayAnim_Btn(const _char* leftLabel, const _char* mid
     if (ImGui::Button(leftLabel, _buttonSize))
     {
         // 왼쪽 버튼이 눌렸을 때 실행될 코드
-        if (0 > m_iCurAnimIdx - 1)
-            return;
-
-        m_pAT_PartAnimObj->Set_CurAnimIdx(--m_iCurAnimIdx, 1);
+        const auto order = Get_AnimationDisplayOrder();
+        const auto current = std::find(order.begin(), order.end(), m_iCurAnimIdx);
+        if (current == order.end() || current == order.begin()) { return; }
+        PlayAnimTest_StartBtn(*(current - 1), PartAnimObj_Type::ANIM_PLAY_TYPE::DEFAULT);
     }
 
     // Mid button (중앙에 배치)
@@ -6619,10 +6665,10 @@ void CLevel_AnimTool::Show_PlayAnim_Btn(const _char* leftLabel, const _char* mid
     if (ImGui::Button(rightLabel, _buttonSize))
     {
         // 오른쪽 버튼이 눌렸을 때 실행될 코드
-        if (m_AnimNamesCStr.size() <= m_iCurAnimIdx + 1)
-            return;
-
-        m_pAT_PartAnimObj->Set_CurAnimIdx(++m_iCurAnimIdx, 1);
+        const auto order = Get_AnimationDisplayOrder();
+        const auto current = std::find(order.begin(), order.end(), m_iCurAnimIdx);
+        if (current == order.end() || current + 1 == order.end()) { return; }
+        PlayAnimTest_StartBtn(*(current + 1), PartAnimObj_Type::ANIM_PLAY_TYPE::DEFAULT);
     }
 }
 

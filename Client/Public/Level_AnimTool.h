@@ -502,6 +502,7 @@ private:
 	// 선택 가능한 애니매이션 목록들을 출력하는함수, 선택하고 현재 애니매이션 변경이 가능하다.
 	void									Show_Default_AnimPlayTest();
 	void									Show_Selectable_AnimList_ListBox();
+    std::vector<int> Get_AnimationDisplayOrder() const;
 	void									Show_AnimInfos_ListBox();	// -- Anim KeyFrame 관련 데이터 출력
 	void									Show_PlayAnim_Btn(const _char* leftLabel, const _char* midLabel, const _char* rightLabel, ImVec2 buttonSize);
 	void									Show_Loop_Default_AnimPlayTest();

@@ -16,9 +16,9 @@ HRESULT CImgui_Manager::Initialize(HWND _hWnd)
 	ImGui::CreateContext();
 	ImNodes::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	if (GetFileAttributesW(L"C:/Windows/Fonts/segoeui.ttf") != INVALID_FILE_ATTRIBUTES)
+	if (GetFileAttributesW(L"C:/Windows/Fonts/malgun.ttf") != INVALID_FILE_ATTRIBUTES)
 	{
-		io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeui.ttf", 17.f);
+		io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/malgun.ttf", 17.f, nullptr, io.Fonts->GetGlyphRangesKorean());
 	}
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
