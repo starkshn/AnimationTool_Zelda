@@ -33,7 +33,7 @@ static fs::path ToolDataDirectory()
 
 static fs::path DefaultEventFile()
 {
-    return ToolDataDirectory() / L"AnimationEvents" / L"Link.xml";
+    return ToolDataDirectory() / L"AnimationEvents" / L"LinkAnimationEvents.xml";
 }
 
 static std::string eventFileStatus = "";
@@ -145,11 +145,16 @@ HRESULT CLevel_AnimTool::Initialize()
     {
         return E_FAIL;
     }
+    if (FAILED(m_pGameInstance->Add_Prototype(LEVEL_ANIMTOOL, TEXT("Prototype_Component_Texture_EventSpark"), CTexture::Create(m_pDevice, m_pContext, TEXT("../Bin/Resources/Textures/EventPreview/Spark.png"), 1))))
+    {
+        return E_FAIL;
+    }
     CEffect* prototype = CEffect::Create(m_pDevice, m_pContext);
     if (!prototype) { return E_FAIL; }
     CEffect::PREVIEW_DESC effectDescription;
-    for (int index = 0; index < 8; ++index)
+    for (int index = 0; index < 16; ++index)
     {
+        effectDescription.spark = index >= 8;
         CEffect* effect = static_cast<CEffect*>(prototype->Clone(&effectDescription));
         if (!effect) { Safe_Release(prototype); return E_FAIL; }
         m_eventEffects.push_back(effect);
@@ -221,20 +226,21 @@ void CLevel_AnimTool::Sync_EventPreview()
                 const auto& event = layer.second[eventIndex];
                 const std::string name = event.first;
                 // A distinct key also supports repeated names on the same track.
-                animation->Set_EventCallback(layer.first, std::to_string(eventIndex), event.second, [this, name]() { Trigger_EventPreview(name); });
+                animation->Set_EventCallback(layer.first, std::to_string(eventIndex), event.second, [this, name, layerName = layer.first]() { Trigger_EventPreview(name, layerName); });
             }
         }
     }
 }
 
-void CLevel_AnimTool::Trigger_EventPreview(const std::string& eventName)
+void CLevel_AnimTool::Trigger_EventPreview(const std::string& eventName, const std::string& layerName)
 {
     if (!m_showEventVfx || m_eventEffects.empty() || !m_pAT_Obj || !m_pAT_PartAnimObj) { return; }
     const _matrix world = m_pAT_PartAnimObj->Get_Transform()->Get_WorldMatrix() * m_pAT_Obj->Get_Transform()->Get_WorldMatrix();
+    const bool spark = layerName == "Spark";
     const float side = eventName == "Left" ? -0.2f : eventName == "Right" ? 0.2f : 0.f;
-    const _vector position = XMVector3TransformCoord(XMVectorSet(side, 0.35f, 0.f, 1.f), world);
-    m_eventEffects[m_nextEventEffect]->Trigger_Preview(position);
-    m_nextEventEffect = (m_nextEventEffect + 1) % m_eventEffects.size();
+    const _vector position = XMVector3TransformCoord(XMVectorSet(side + (spark ? 0.45f : 0.f), spark ? 0.65f : 0.35f, 0.f, 1.f), world);
+    m_eventEffects[(spark ? 8 : 0) + m_nextEventEffect]->Trigger_Preview(position);
+    m_nextEventEffect = (m_nextEventEffect + 1) % 8;
 }
 
 void CLevel_AnimTool::Update_Logs(_float fTimeDelta)
@@ -334,7 +340,7 @@ HRESULT CLevel_AnimTool::Ready_Layer_AnimTool_Camera(const _wstring& strLayerTag
 {
     CAnimTool_Camera::CAMERA_FREE_DESC Desc = {};
 
-    Desc.fSpeedPerSec = 10.f;
+    Desc.fSpeedPerSec = 7.f;
     Desc.fRotationPerSec = XMConvertToRadians(180.f);
     Desc.fMouseSensor = 0.1f;
     Desc.fFovy = XMConvertToRadians(60.f);
@@ -553,6 +559,8 @@ void CLevel_AnimTool::Render_ShowObjectInfo()
 
 _bool CLevel_AnimTool::Open_Modal(string strEx, WCHAR* pRetPath)
 {
+    const bool eventData = strEx == "events";
+    if (eventData) { strEx = "xml"; }
     ZeroMemory(&m_ofn, sizeof(m_ofn));
     WCHAR szFile[256] = { 0 };     // 
     // 선택된 파일 경로를 저장할 버퍼
@@ -593,7 +601,7 @@ _bool CLevel_AnimTool::Open_Modal(string strEx, WCHAR* pRetPath)
 
     // 상대 경로를 절대 경로로 변환
     fs::path relativePath(strPath);
-    fs::path absolutePath = strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
+    fs::path absolutePath = eventData ? DefaultEventFile().parent_path() : strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
 
     // 절대 경로를 WCHAR 배열로 변환하여 초기 디렉토리에 설정
     _wstring strInitDir = absolutePath.wstring();
@@ -698,8 +706,11 @@ _bool CLevel_AnimTool::Open_XMLFile_Dialog(WCHAR* strInFilePath, _uint iMaxPathL
 
 _bool CLevel_AnimTool::Open_Save_Modal(string strEx, WCHAR* pRetPath)
 {
+    const bool eventData = strEx == "events";
+    if (eventData) { strEx = "xml"; }
     ZeroMemory(&m_ofn, sizeof(m_ofn));
     WCHAR szFile[256] = { 0 }; // 저장할 파일 이름 버퍼
+    if (eventData) { wcscpy_s(szFile, L"AnimationEvents.xml"); }
     m_ofn.lStructSize = sizeof(m_ofn);
     m_ofn.hwndOwner = nullptr; // 소유자 창 핸들
     m_ofn.lpstrFile = szFile;  // 파일 이름 버퍼
@@ -724,7 +735,7 @@ _bool CLevel_AnimTool::Open_Save_Modal(string strEx, WCHAR* pRetPath)
 
     // 상대 경로를 절대 경로로 변환
     fs::path relativePath(strPath);
-    fs::path absolutePath = strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
+    fs::path absolutePath = eventData ? DefaultEventFile().parent_path() : strEx == "xml" ? ToolDataDirectory() : fs::absolute(relativePath);
 
     // 절대 경로를 WCHAR 배열로 변환하여 초기 디렉토리에 설정
     _wstring strInitDir = absolutePath.wstring();
@@ -5529,7 +5540,10 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
 {
     ImGui::Checkbox("Event VFX", &m_showEventVfx);
     ImGui::SameLine();
-    if (ImGui::Button("Test VFX")) { Trigger_EventPreview(""); }
+    if (ImGui::Button("Test Explosion")) { Trigger_EventPreview("", "Explosion"); }
+    ImGui::SameLine();
+    if (ImGui::Button("Test Spark")) { Trigger_EventPreview("", "Spark"); }
+    ImGui::TextDisabled("Layer: Explosion = explosion | Spark = hit sparks");
 
     if (ImGui::Button(u8"\uae30\ubcf8 \ub9c1\ud06c \uc774\ubca4\ud2b8 \ubd88\ub7ec\uc624\uae30"))
     {
@@ -5537,6 +5551,20 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     }
     ImGui::SameLine();
     ImGui::TextUnformatted(eventFileStatus.c_str());
+    ImGui::TextDisabled(u8"\uc560\ub2c8\uba54\uc774\uc158 \uc774\ubca4\ud2b8 \ub370\uc774\ud130 | \ud074\ub9bd \uc774\ub984\uc73c\ub85c \uc5f0\uacb0");
+    for (const auto& animation : m_Events)
+    {
+        size_t eventCount = 0;
+        for (const auto& layer : animation.second)
+        {
+            eventCount += layer.second.size();
+        }
+        if (eventCount == 0) { continue; }
+        std::string clipName = animation.first;
+        const auto separator = clipName.find('|');
+        if (separator != std::string::npos) { clipName = clipName.substr(separator + 1); }
+        ImGui::TextWrapped(u8"%s | \uc774\ubca4\ud2b8 %u\uac1c", clipName.c_str(), static_cast<unsigned>(eventCount));
+    }
 
     // XML 저장 함수
     if (ImGui::Button(u8"\uc774\ubca4\ud2b8 \ub2e4\ub978 \uc774\ub984\uc73c\ub85c \uc800\uc7a5"))
@@ -5544,7 +5572,7 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
         if (!m_Events.empty())
         {
             WCHAR strRetPath[256];
-            if (Open_Save_Modal("xml", strRetPath))
+            if (Open_Save_Modal("events", strRetPath))
             {
                 if (S_OK == XML_Save_Events(strRetPath))
                 {
@@ -5567,7 +5595,7 @@ void CLevel_AnimTool::Draw_KeyFrame_TimeLine()
     if (ImGui::Button(u8"\uc774\ubca4\ud2b8 XML \ubd88\ub7ec\uc624\uae30"))
     {
         WCHAR strFilePath[256];
-        if (Open_Modal("xml", strFilePath))
+        if (Open_Modal("events", strFilePath))
         {
             if (XML_Load_Events(strFilePath) != S_OK)
             {
@@ -5770,7 +5798,7 @@ pair<_bool, _bool> CLevel_AnimTool::DrawOn_TrackPosBar(ImDrawList* pDrawList, _f
                     const bool crossedBackward = previewTrack <= event.second && event.second < previousTrack;
                     if (crossedForward || crossedBackward)
                     {
-                        Trigger_EventPreview(event.first);
+                        Trigger_EventPreview(event.first, layer.first);
                     }
                 }
             }
@@ -5810,8 +5838,15 @@ void CLevel_AnimTool::HoverOn_TrackPosBar(_bool bHover, _float fCurTrackPos)
     if (bOpen)
     {
         ImGui::OpenPopup("AddEventPopup");
-        if (ImGui::BeginPopupModal("AddEventPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal("AddEventPopup", &bOpen, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+            {
+                bOpen = false;
+                ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+                return;
+            }
             static int item = 0;
             ImGui::Combo("Select", &item, "Select\0Layer And Event\0\0");
 
@@ -5883,7 +5918,6 @@ void CLevel_AnimTool::HoverOn_TrackPosBar(_bool bHover, _float fCurTrackPos)
                             ImGui::CloseCurrentPopup();
                         }
 
-                        ImGui::EndPopup();
                     }
                 }
             }

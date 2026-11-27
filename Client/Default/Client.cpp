@@ -211,8 +211,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case VK_ESCAPE:
-            DestroyWindow(g_hWnd);
-            break;
+            // Escape belongs to editor dialogs; close the application with its window button.
+            return 0;
         }
         break;
 

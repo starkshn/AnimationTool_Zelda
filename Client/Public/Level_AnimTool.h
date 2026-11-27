@@ -291,7 +291,7 @@ private:
     int m_eventBoundAnimationCount = 0;
     std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, _float>>>> m_boundPreviewEvents;
     void Sync_EventPreview();
-    void Trigger_EventPreview(const std::string& eventName);
+    void Trigger_EventPreview(const std::string& eventName, const std::string& layerName = "");
 
 private:
 	CLevel_AnimTool(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
