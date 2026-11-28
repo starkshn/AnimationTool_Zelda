@@ -359,7 +359,7 @@ _bool CAnimation::Update_TransformationMatrices(const vector<class CBone*>& Bone
 		if (m_Channels[i]->Get_BoneIdx() == iAddtionalBoneIdx)
 		{
 			m_Channels[i]->Update_TransformationMatrix(m_fCurrentTrackPosition, &m_CurrentKeyFrameIndices[i], Bones);
-			return bEnd;
+			continue;
 		}
 
 		// 채널이 가르키는 BoneIdx와 뭔가 다르다면 continue? 등의 작업
