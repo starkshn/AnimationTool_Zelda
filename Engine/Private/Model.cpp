@@ -3625,3 +3625,14 @@ void CModel::Free()
 	m_Importer.FreeScene();
 
 }
+
+void CModel::Seek_BlendGroup(ANIM_BLEND_GROUP_TYPE type, _float position)
+{
+    auto& group = m_BlendGroups[int(type)];
+    if (!group.AnimInfo.bUse || !group.AnimInfo.pAnim) { return; }
+    auto* animation = group.AnimInfo.pAnim;
+    animation->Set_CurTrackPos(position);
+    animation->Reset_CurKeyFrameIndices();
+    animation->Update_TransformationMatrices(m_Bones, true, group.DefaultInfo.iMinBoneIdx, group.DefaultInfo.iMaxBoneIdx, 0.f, type == ANIM_BLEND_GROUP_TYPE::LOWER_BODY ? 3 : -1);
+    Update_Bone_CombinedTransformationMatrix(true);
+}

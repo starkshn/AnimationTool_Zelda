@@ -1346,6 +1346,7 @@ public:
 	_float Get_Anim_Duration(_int iAnimIdx);	// 250130
 	_float Get_Anim_CurTrackPos(_int iAnimIdx); // 250130
 	void Set_CurAnim_TrackPos(_float fTrackPos);
+	void Seek_BlendGroup(ANIM_BLEND_GROUP_TYPE group, _float position);
 
 	vector<class CBone*>* Get_Bones_Ptr() { return &m_Bones; }
 

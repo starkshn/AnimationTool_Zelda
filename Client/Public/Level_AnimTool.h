@@ -409,7 +409,7 @@ private:
 	void									XML_Save_Selected_BlendBones(xml::XMLDocument* pDoc, xml::XMLElement* pEleParent, BONE_XML& Bone, string strDstBoneName, _int& iMinBoneIdx, _int& iMaxBoneIdx);
 	void									XML_Save_BlendBones_ReCursion(xml::XMLDocument* pDoc, xml::XMLElement* pParentEle, BONE_XML& Bone, string strDstBoneName, _bool bFind, _int& iMinBoneIdx, _int& iMaxBoneIdx);
 
-	HRESULT									XML_Load_BlendBones(); // 블렌딩 뼈 정보 읽는 함수
+	HRESULT									XML_Load_BlendBones(const WCHAR* defaultPath = nullptr); // 블렌딩 뼈 정보 읽는 함수
 	void									XML_ParseBone_Recursion(xml::XMLElement* pParentEle, BONE_XML& Bone, _bool bLoadBlendBone);
 
 	// 이벤트 XML 저장

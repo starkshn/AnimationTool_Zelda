@@ -171,6 +171,11 @@ HRESULT CLevel_AnimTool::Initialize()
         return E_FAIL;
     }
 
+    if (FAILED(XML_Load_BoneHierachy(L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkBone.xml"))) { Add_Log(LOG_FAIL, XML_LOAD, "Startup", "LinkBone.xml"); }
+    if (FAILED(XML_Load_RootMotionBoneNameData(L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkRootMotionBoneName.xml"))) { Add_Log(LOG_FAIL, XML_LOAD, "Startup", "LinkRootMotionBoneName.xml"); }
+    if (FAILED(XML_Load_BlendBones(L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkBlendBones.xml"))) { Add_Log(LOG_FAIL, XML_LOAD, "Startup", "LinkBlendBones.xml"); }
+    if (FAILED(m_pAT_PartAnimObj_Model->Load_Anim_InterXML(L"../Bin/Resources/ny/LinkVer_2.0.2/LinkVer_2.2/Model2.2/LinkInterpolationData.xml"))) { Add_Log(LOG_FAIL, XML_LOAD, "Startup", "Interpolation data failed"); }
+
     if (FAILED(XML_Load_Events(DefaultEventFile().c_str())))
     {
         eventFileStatus = "Default events could not be loaded.";
@@ -1980,7 +1985,7 @@ _bool CLevel_AnimTool::Show_AnimRootMotionType_RadioBtn()
 _bool CLevel_AnimTool::Show_AnimPlayType_ComboBox()
 {
     static const _char* pAnimPlayTestTypes[] = { u8"\ub2e8\uc77c \uc7ac\uc0dd", u8"\uc21c\ucc28 \uc7ac\uc0dd (\ubcf4\uac04 \uc5c6\uc74c)", u8"\ud074\ub9bd \uc804\ud658 \ubcf4\uac04", u8"\ubd80\uc704\ubcc4 \ube14\ub80c\ub529" };
-    static _int iSelectedAnimPlayTestTypeIdx = 0;
+    static _int iSelectedAnimPlayTestTypeIdx = 3;
     const _char* pComboSelectedAnimPlaytestTypeName = pAnimPlayTestTypes[iSelectedAnimPlayTestTypeIdx];
 
     if (BeginToolCombo(u8"\uc7ac\uc0dd \ubc29\uc2dd", pComboSelectedAnimPlaytestTypeName))
@@ -3573,21 +3578,79 @@ void CLevel_AnimTool::Show_Loop_Interpolation_AnimPlayTest()
 
 void CLevel_AnimTool::Show_Loop_Blending_AnimPlayTest()
 {
-    // 블렌딩 뼈 로드 한적이 없다면
+    ImGui::SeparatorText(u8"\ubd80\uc704\ubcc4 \uc560\ub2c8\uba54\uc774\uc158");
+    ImGui::TextWrapped(u8"\ud558\uccb4\uc5d0 \uc774\ub3d9 \ub3d9\uc791, \uc0c1\uccb4\uc5d0 \uacf5\uaca9 \ub3d9\uc791\uc744 \uc120\ud0dd\ud55c \ub4a4 \uc870\ud569 \uc7ac\uc0dd\uc744 \ub204\ub974\uc138\uc694.");
     if (!m_bLoadSuccessBlendBones)
     {
-        if (ImGui::Button("Load Blend Bones"))
-        {
-            if (FAILED(XML_Load_BlendBones()))
-            {
-                MSG_BOX("Load BlendBones Failed");
-            }
-        }
+        ImGui::TextWrapped(u8"\ubd80\uc704 \uad6c\ubd84 \ub370\uc774\ud130\ub97c \uc77d\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \ubaa8\ub378\uc5d0 \ub9de\ub294 \ubd80\uc704 \ub370\uc774\ud130\ub97c \ub2e4\uc2dc \uc120\ud0dd\ud558\uc138\uc694.");
+        if (ImGui::Button(u8"\ubd80\uc704 \ub370\uc774\ud130 \ub2e4\uc2dc \ubd88\ub7ec\uc624\uae30")) { XML_Load_BlendBones(); }
+        return;
     }
-    else
+    const auto& names = m_pAT_PartAnimObj_Model->Get_AnimNames();
+    if (names.empty()) { return; }
+    static int clips[5] = { 0, 0, -1, -1, -1 };
+    static bool initialClips = true;
+    if (initialClips)
     {
-        Show_BlendBone_ComboBox();
+        for (int i = 0; i < static_cast<int>(names.size()); ++i)
+        {
+            if (names[i] == "Armature|Nml_Move_Run") { clips[0] = i; }
+            if (names[i] == "Armature|Sword_Attack_S1") { clips[1] = i; }
+        }
+        initialClips = false;
     }
+    const char* labels[] = { u8"\ud558\uccb4", u8"\uc0c1\uccb4", u8"\uc67c\ud314", u8"\uc624\ub978\ud314", u8"\uba38\ub9ac" };
+    const ANIM_BLEND_GROUP_TYPE groups[] = { ANIM_BLEND_GROUP_TYPE::LOWER_BODY, ANIM_BLEND_GROUP_TYPE::UPPER_BODY, ANIM_BLEND_GROUP_TYPE::ARM_LEFT, ANIM_BLEND_GROUP_TYPE::ARM_RIGHT, ANIM_BLEND_GROUP_TYPE::HEAD };
+    auto clipLabel = [&](int index) -> string
+    {
+        const string& name = names[index];
+        const char* category = u8"\ub3d9\uc791";
+        if (name.find("Wait") != string::npos) { category = u8"\ub300\uae30"; }
+        else if (name.find("Run") != string::npos) { category = u8"\ub2ec\ub9ac\uae30"; }
+        else if (name.find("Walk") != string::npos) { category = u8"\uac77\uae30"; }
+        else if (name.find("Attack") != string::npos) { category = u8"\uacf5\uaca9"; }
+        else if (name.find("Dash") != string::npos) { category = u8"\ub300\uc2dc"; }
+        else if (name.find("Face") != string::npos) { category = u8"\ud45c\uc815"; }
+        return string(category) + " | " + name;
+    };
+    auto chooseClip = [&](int part)
+    {
+        ImGui::PushID(part);
+        if (clips[part] >= static_cast<int>(names.size())) { clips[part] = part < 2 ? 0 : -1; }
+        const string preview = clips[part] < 0 ? u8"\uc0c1\uccb4 \ub3d9\uc791 \ub530\ub974\uae30" : clipLabel(clips[part]);
+        if (BeginToolCombo(labels[part], preview.c_str()))
+        {
+            if (part >= 2 && ImGui::Selectable(u8"\uc0c1\uccb4 \ub3d9\uc791 \ub530\ub974\uae30", clips[part] < 0)) { clips[part] = -1; }
+            for (int i = 0; i < static_cast<int>(names.size()); ++i)
+            {
+                if (ImGui::Selectable(clipLabel(i).c_str(), clips[part] == i)) { clips[part] = i; }
+                if (clips[part] == i) { ImGui::SetItemDefaultFocus(); }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopID();
+    };
+    chooseClip(0);
+    chooseClip(1);
+    if (ImGui::CollapsingHeader(u8"\ud314\uacfc \uba38\ub9ac \ub530\ub85c \uc124\uc815"))
+    {
+        ImGui::TextWrapped(u8"\uc120\ud0dd\ud55c \ubd80\uc704\ub9cc \uc0c1\uccb4 \ub3d9\uc791 \ub300\uc2e0 \ubcc4\ub3c4 \ub3d9\uc791\uc744 \uc0ac\uc6a9\ud569\ub2c8\ub2e4. \uc591\ucabd \ub2e4\ub9ac\ub294 \ud558\uccb4\ub85c \ud568\uaed8 \uc81c\uc5b4\ud569\ub2c8\ub2e4.");
+        chooseClip(2); chooseClip(3); chooseClip(4);
+    }
+    if (ImGui::Button(u8"\uc120\ud0dd\ud55c \uc870\ud569 \uc7ac\uc0dd"))
+    {
+        vector<pair<ANIM_BLEND_GROUP_TYPE, _int>> selected;
+        for (int i = 0; i < 5; ++i) { if (clips[i] >= 0) { selected.push_back({ groups[i], clips[i] }); } }
+        for (int i = int(ANIM_BLEND_GROUP_TYPE::LOWER_BODY); i <= int(ANIM_BLEND_GROUP_TYPE::TOTAL); ++i) { m_pAT_PartAnimObj_Model->Reset_BlendGroupBone(ANIM_BLEND_GROUP_TYPE(i)); }
+        if (selected.size() == 2) { m_pAT_PartAnimObj_Model->Set_BlendGroup(selected[0], selected[1]); }
+        else if (selected.size() == 3) { m_pAT_PartAnimObj_Model->Set_BlendGroup(selected[0], selected[1], selected[2]); }
+        else if (selected.size() == 4) { m_pAT_PartAnimObj_Model->Set_BlendGroup(selected[0], selected[1], selected[2], selected[3]); }
+        else if (selected.size() == 5) { m_pAT_PartAnimObj_Model->Set_BlendGroup(selected[0], selected[1], selected[2], selected[3], selected[4]); }
+        for (const auto& item : selected) { m_pAT_PartAnimObj_Model->Set_BlendGroup_Loop(item.first, true); }
+        m_pAT_PartAnimObj->m_bIsPlayAnimBlend = true;
+    }
+    ImGui::TextWrapped(u8"\ubd80\uc704 \ub370\uc774\ud130\ub294 \ub3d9\uc791\uc744 \uc801\uc6a9\ud560 \ubf08\uc758 \ubc94\uc704\uc785\ub2c8\ub2e4. \ubf08 \uacc4\uce35\uc740 \ubd80\ubaa8 \uad00\uacc4, \ub8e8\ud2b8 \ubaa8\uc158\uc740 \uc774\ub3d9 \uae30\uc900, \ubcf4\uac04 \ub370\uc774\ud130\ub294 \ub3d9\uc791 \uc804\ud658\uc744 \uc815\ud569\ub2c8\ub2e4.");
+    if (ImGui::CollapsingHeader(u8"\uace0\uae09 \uc870\ud569 \ubc0f \uc804\ud658 \uc124\uc815 (\uae30\uc874 \uae30\ub2a5)")) { Show_BlendBone_ComboBox(); }
 }
 
 void CLevel_AnimTool::Show_Blending_List(ExampleDualListBox& pArr, ANIM_BLEND_GROUP_TYPE eBlendType)
@@ -5052,10 +5115,11 @@ void CLevel_AnimTool::XML_Save_Selected_BlendBones(xml::XMLDocument* pDoc, xml::
 
 
 
-HRESULT CLevel_AnimTool::XML_Load_BlendBones()
+HRESULT CLevel_AnimTool::XML_Load_BlendBones(const WCHAR* defaultPath)
 {
     WCHAR strFilePath[256] = {};
-    if (Open_Modal("xml", strFilePath))
+    if (defaultPath) { wcscpy_s(strFilePath, defaultPath); }
+    if (defaultPath || Open_Modal("xml", strFilePath))
     {
         xml::XMLDocument Doc;
 
@@ -5519,6 +5583,54 @@ void CLevel_AnimTool::Begin_Animation_KeyFrame()
     const float height = min(timelineHeight, size.y * 0.40f);
     PlaceAnimationPanel(0.f, size.y - height, size.x, height);
     ImGui::Begin(u8"\ud0c0\uc784\ub77c\uc778", nullptr, panelFlags);
+
+
+    if (m_pAT_PartAnimObj->m_bIsPlayAnimBlend)
+    {
+        auto* groups = m_pAT_PartAnimObj_Model->Get_BlendGroups();
+        const char* labels[] = { u8"\uc5c6\uc74c", u8"\ud558\uccb4", u8"\uc0c1\uccb4", u8"\uc67c\ud314", u8"\uc624\ub978\ud314", u8"\uba38\ub9ac", u8"\uc804\uc2e0" };
+        if (ImGui::Button(u8"\ubaa8\ub450 \uc7ac\uc0dd")) { for (int i = 1; i <= int(ANIM_BLEND_GROUP_TYPE::TOTAL); ++i) { groups[i].AnimInfo.bUpdate = true; } }
+        ImGui::SameLine();
+        if (ImGui::Button(u8"\ubaa8\ub450 \uc77c\uc2dc\uc815\uc9c0")) { for (int i = 1; i <= int(ANIM_BLEND_GROUP_TYPE::TOTAL); ++i) { groups[i].AnimInfo.bUpdate = false; } }
+        bool any = false;
+        for (int i = 1; i <= int(ANIM_BLEND_GROUP_TYPE::TOTAL); ++i)
+        {
+            auto& group = groups[i];
+            auto& info = group.AnimInfo;
+            if (!info.bUse || !info.pAnim) { continue; }
+            any = true;
+            ImGui::PushID(i);
+            ImGui::Separator();
+            ImGui::Text("%s | %s", labels[i], info.strAnimName.c_str());
+            if (ImGui::Button(info.bUpdate ? u8"\uc77c\uc2dc\uc815\uc9c0" : u8"\uc7ac\uc0dd")) { info.bUpdate = !info.bUpdate; }
+            ImGui::SameLine();
+            ImGui::Checkbox(u8"\ubc18\ubcf5", &info.bIsLoop);
+            float position = info.pAnim->Get_CurTrackPos();
+            float duration = info.pAnim->Get_AnimDuration();
+            if (duration > 0.f)
+            {
+                const ImVec2 origin = ImGui::GetCursorScreenPos();
+                const float width = ImMax(1.f, ImGui::GetContentRegionAvail().x);
+                auto* draw = ImGui::GetWindowDrawList();
+                const float step = Draw_TimeLine(draw, width, origin, duration);
+                ImGui::InvisibleButton("##track", ImVec2(width, m_fFrameLineLen + ImGui::GetTextLineHeight() + 8.f));
+                const bool dragging = ImGui::IsItemActive() && ImGui::IsMouseDown(0);
+                if (dragging)
+                {
+                    position = ImClamp((ImGui::GetIO().MousePos.x - origin.x) / step, 0.f, duration);
+                    info.bUpdate = false;
+                    m_pAT_PartAnimObj_Model->Seek_BlendGroup(ANIM_BLEND_GROUP_TYPE(i), position);
+                }
+                const float headX = origin.x + position * step;
+                draw->AddRectFilled(ImVec2(headX - 4.f, origin.y), ImVec2(headX + 4.f, origin.y + 35.f), dragging ? IM_COL32(145, 230, 240, 255) : IM_COL32(65, 185, 215, 255));
+                if (ImGui::IsItemHovered()) { ImGui::SetTooltip("%.1f / %.1f ticks", position, duration); }
+            }
+            ImGui::PopID();
+        }
+        if (!any) { ImGui::TextWrapped(u8"\uc67c\ucabd\uc5d0\uc11c \ub3d9\uc791\uc744 \uc120\ud0dd\ud558\uace0 \uc120\ud0dd\ud55c \uc870\ud569 \uc7ac\uc0dd\uc744 \ub204\ub974\uc138\uc694."); }
+        ImGui::End();
+        return;
+    }
 
     string strCurAnimName = m_pAT_PartAnimObj_Model->Get_CurAnim()->Get_AnimName();
     _int iCurAnimIdx = m_pAT_PartAnimObj_Model->Get_AnimIdx(strCurAnimName);
